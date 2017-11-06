@@ -3,18 +3,7 @@
 #include <random>
 
 #define HEIGHT 	256
-#define WIDTH 	256
-
-const float shitty_kernel_from_the_internet = 	
-								[1/16, 1/8, 1/16,
-								 1/8,  1/4, 1/8,
-								 1/16, 1/8, 1/16];
-
-
-const float the_real_and_only_normal_kernel = 	
-								[,
-								 ,
-								 ];								
+#define WIDTH 	256						
 
 void load(std::string filename, float * buffer)
 {
@@ -86,17 +75,6 @@ float computePsnr(float* image_noisy, float* image_ref, float max)
 	mse /= HEIGHT*WIDTH;
 
 	return 10*log10(max*max/mse);
-}
-
-void convolve(float * image, float * kernel)
-{
-	for (int i = 0; i < HEIGHT; i++)
-	{
-		for (int j = 0; j < WIDTH; j++)
-			{
-				
-			}		
-	}
 }
 
 int main()
