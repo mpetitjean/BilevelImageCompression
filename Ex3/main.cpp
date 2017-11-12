@@ -93,7 +93,7 @@ int main(void)
 	float psnrCU = psnr(constantImage, uniformRandomImage, 1.0);
 	printf("PSNR between constant and uniform random distributed is %.2f dB\n", psnrCU);
 
-	float* gaussianImage = createGaussianImage(HEIGHT, WIDTH, 0.5, 0.5);
+	float* gaussianImage = createGaussianImage(HEIGHT, WIDTH, 0.5, 0.1);
 	store(gaussianImage, "gaussian.raw");
 
 	float psnrUG = psnr(uniformRandomImage, gaussianImage, 1.0);
