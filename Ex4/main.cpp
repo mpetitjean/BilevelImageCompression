@@ -56,8 +56,6 @@ void addGaussianNoise(float * bufferIn, float * bufferOut)
 	        	bufferOut[w + h*WIDTH] = 1.0;
 	        else if (bufferOut[w + h*WIDTH] < 0.0)
 	        	bufferOut[w + h*WIDTH] = 0.0;
-
-	        printf("%.2f\n", bufferOut[w + h*WIDTH]);
 	    }
 	}
 }
@@ -93,7 +91,7 @@ int main()
 	float * lenaNoisy = new float[HEIGHT*WIDTH];
 	addGaussianNoise(lena01, lenaNoisy);
 
-	storeFloat(lenaNoisy);
+	storeFloat(lena01);
 	float psnr = computePsnr(lena01, lenaNoisy, 1.0);
 	printf("PSNR is %.2f dB\n", psnr); 
 

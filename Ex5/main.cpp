@@ -134,6 +134,11 @@ void createKernel(float * kernel)
 	kernel[6] = elem11;
 	kernel[7] = elem10;
 	kernel[8] = elem11;
+
+	printf("Kernel:\n\n");
+	printf("%.4f %.4f %.4f\n", elem11, elem10, elem11);
+	printf("%.4f %.4f %.4f\n", elem10, elem00, elem10);
+	printf("%.4f %.4f %.4f\n\n", elem11, elem10, elem11);
 }
 
 void unsharp_masking(float * image, float * blurred, float * result)
@@ -178,6 +183,9 @@ int main()
 	float * sharped = new float[HEIGHT*WIDTH];
 	unsharp_masking(lena01, blurred, sharped);
 	storeFloat(sharped, "sharped.raw");
+
+	psnr = computePsnr(lena01, sharped, 1.0);
+	printf("PSNR of sharped is %.2f dB\n", psnr);
 
 	// Free memory
 	delete lena;
