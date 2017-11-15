@@ -108,7 +108,7 @@ std::vector<float> transform(std::vector<float> image, std::vector<float> basis)
 			transformed[col + row*length] = sum * sqrt(2) / sqrt(length);
 		}
 	}
-	return temp;
+	return transformed;
 }
 
 std::vector<float> threshold(std::vector<float> image, float value = 1e-10)
@@ -124,22 +124,7 @@ std::vector<float> approximateBlock(std::vector<float> block, std::vector<float>
 
 	std::transform(block.begin(), block.end(), Q.begin(), temp.begin(), std::divides<int>());
 	std::transform(temp.begin(), temp.end(), Q.begin(), block.begin(), std::multiplies<float>());
-	// for (int i = 0; i < length; ++i)
-	// {
-	// 	for (int j = 0; j < length; ++j)
-	// 	{
-	// 		temp[j + i*length] = (int) (block[j+i*length]/Q[j+i*length]);
-	// 	}
-	// }
 
-	// // perform IQ
-	// for (int i = 0; i < length; ++i)
-	// {
-	// 	for (int j = 0; j < length; ++j)
-	// 	{
-	// 		block[j + i*length] = (float) (temp[j+i*length]*Q[j+i*length]);
-	// 	}
-	// }
 	return transform(block, fcoef);
 }
 
@@ -149,7 +134,6 @@ std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoe
 	int length = sqrt(image.size());
 	std::vector<float> result(image.size());
 	int nbframe = length / block_size;
-	std::cout << nbframe << " " << nbframe * nbframe << std::endl;
 	std::vector<float> block(Q.size());
 
 	for (int step = 0; step < nbframe * nbframe; ++step)
@@ -163,7 +147,7 @@ std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoe
 		 	std::copy_n(image.begin() + i * length + off_row + off_col, block_size, block.begin() + i * block_size);
 		}
 
-		block = approximateBlock(block, tcoef, fcoef, Q, block_size);
+		block = approximateBlock(block, tcoef, fcoef, Q);
 
 		for (int i = 0; i < block_size; ++i)
 		{
