@@ -1,103 +1,76 @@
 #include <iostream>
-#include <cmath>
-#include <random>
 #include <fstream>
+#include <vector>
+#include <cmath>
+#include <functional>
+#include <numeric>
+#include <random>
+#include <algorithm>
 
-#define HEIGHT 	256
-#define WIDTH 	256
+#define ROWS 256
+#define COLS 256
 
-
-float psnr(float* image_noisy, float* image_ref, float max)
+int store(std::string filename, std::vector<float> image)
 {
-	float mse = 0;
-	for (int i = 0; i < WIDTH; i++)
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
 	{
-		for (int j = 0; j < HEIGHT; j++)
-		{
-			mse += pow((image_noisy[j+i*WIDTH] - image_ref[j+i*WIDTH]),2);
-		}
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
 	}
-	mse /= HEIGHT*WIDTH;
-
-	return 10*log10(max*max/mse);
+	else
+	{
+		std::cout << "Cannot write into " << filename;
+		file.close();
+		return 1;
+	}
 }
 
-void store(float* arrayIn, std::string filename)
-{
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out | std::ios::binary);
+template <class T> struct sqminus {
+  T operator() (const T& x, const T& y) const {return pow(x-y,2);}
+  typedef T first_argument_type;
+  typedef T second_argument_type;
+  typedef T result_type;
+};
 
-	if (outfile.is_open()) 
-	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), HEIGHT*WIDTH*sizeof(float));
-	}
-	outfile.close();
+std::vector<float> createConstImage(int rows = ROWS, int cols = COLS, float value = 0.5)
+{
+	return std::vector<float>(rows*cols, value) ;
 }
 
-float* createConstantImage(int height, int width, float value)
+std::vector<float> createUniformRandomImage(int rows = ROWS, int cols = COLS)
 {
-
-	float* array2D = new float[height*width];
-	for (int h = 0; h < height; h++)
-	{
-	    for (int w = 0; w < width; w++)
-	    {
-	        array2D[w + h*height] = value;
-	    }
-	}
-	return array2D;
+	std::default_random_engine gen;
+	std::uniform_real_distribution<float> dis(0.0, 1.0);
+	std::vector<float> image(rows*cols);
+	std::generate(image.begin(), image.end(), [&](){ return dis(gen); });
+	return image;
 }
 
-float* createUniformRandomImage(int height, int width)
+std::vector<float> createNormalRandomImage(int rows = ROWS, int cols = COLS, float mean = 0.0, float std = 1.0)
 {
-	std::default_random_engine generator;
-  	std::uniform_real_distribution<float> distribution(0.0,1.0);
-
-	float* array2D = new float[height*width];
-	for (int h = 0; h < height; h++)
-	{
-	    for (int w = 0; w < width; w++)
-	    {
-	        array2D[w + h*width] = distribution(generator);
-	    }
-	}
-	return array2D;
+	std::default_random_engine gen;
+	std::normal_distribution<float> dis(mean, std);
+	std::vector<float> image(rows*cols);
+	std::generate(image.begin(), image.end(), [&](){ return dis(gen);});
+	return image;
 }
 
-float* createGaussianImage(int height, int width, float mean, float stdev)
+float psnr(std::vector<float> image, std::vector<float> ref, float max)
 {
-	std::default_random_engine generator;
-  	std::normal_distribution<float> distribution(mean, stdev);
-
-	float* array2D = new float[height*width];
-	for (int h = 0; h < height; h++)
-	{
-	    for (int w = 0; w < width; w++)
-	    {
-	        array2D[w + h*width] = distribution(generator);
-	    }
-	}
-	return array2D;
+	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0, std::plus<float>(), sqminus<float>()));
 }
 
-
-int main(void)
-{	
-	printf("____________________________\n\n");
-	float* constantImage = createConstantImage(HEIGHT, WIDTH, 0.5);
-	store(constantImage, "constant.raw");
-
-	float* uniformRandomImage = createUniformRandomImage(HEIGHT, WIDTH);
-	store(uniformRandomImage, "uniformRandom.raw");
-
-	float psnrCU = psnr(constantImage, uniformRandomImage, 1.0);
-	printf("PSNR between constant and uniform random distributed is %.2f dB\n", psnrCU);
-
-	float* gaussianImage = createGaussianImage(HEIGHT, WIDTH, 0.5, 0.1);
-	store(gaussianImage, "gaussian.raw");
-
-	float psnrUG = psnr(uniformRandomImage, gaussianImage, 1.0);
-	printf("PSNR between uniform and gaussian is %.2f dB\n", psnrUG);
+int main()
+{
+	std::vector<float> constImage = createConstImage();
+	std::vector<float> uniformImage = createUniformRandomImage();
+	std::vector<float> normalImage = createNormalRandomImage();
+	store("constImage.raw", constImage);
+	store("uniformImage.raw", uniformImage);
+	store("normalImage.raw", normalImage);
+	printf("PSNR between constant and uniform random distributed is %.2f dB\n", psnr(constImage, uniformImage, 1.0));
 
 	return 0;
 }

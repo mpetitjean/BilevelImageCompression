@@ -1,12 +1,64 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
-#define LENGTH_1D	256
-#define BLK_SIZE	8
+#define LENGTH_1D	256 
 
-void create_Q(float * buffer)
+
+
+int store(std::string filename, std::vector<float> image)
 {
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
+	{
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
+	}
+	else
+	{
+		std::cout << "Cannot write into " << filename;
+		file.close();
+	} 
+		return 1;
+}
+
+int load(std::string filename, std::vector<float>& image)
+{	
+	std::ifstream file (filename, std::ios::binary);
+	if (file)
+	{
+		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
+	}
+	else 
+	{
+		std::cout << "Cannot read " << filename;
+		file.close();
+		return 1;
+	}
+}
+
+template <class T> struct sqminus {
+  T operator() (const T& x, const T& y) const {return pow(x-y,2);}
+  typedef T first_argument_type;
+  typedef T second_argument_type;
+  typedef T result_type;
+};
+
+float psnr(std::vector<float> image, std::vector<float> ref, float max)
+{
+	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0,
+	 std::plus<float>(), sqminus<float>()));
+}
+
+std::vector<float> create_Q(float * buffer)
+{
+	std::vector<float> buffer(64);
 	buffer[0] = 16;
 	buffer[1] = 11;
 	buffer[2] = 10;
@@ -75,195 +127,92 @@ void create_Q(float * buffer)
 	// it hurts
 }
 
-void store(float* arrayIn, std::string filename, int size)
+std::vector<float> DCT_vectors_basis(int length = LENGTH_1D)
 {
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out | std::ios::binary);
-
-	if (outfile.is_open()) 
+	std::vector<float> DCT_vectors(length * length);
+	for (int k = 0; k < length; ++k)
 	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), size*size*sizeof(float));
+	    double s = (k == 0) ? sqrt(.5) : 1.;
+	    for (int n = 0; n < length; ++n)
+	    {
+	    	DCT_vectors[k * length + n]= s * cos(M_PI * (n + .5) * k / length);
+	    }
 	}
-	outfile.close();
+  return DCT_vectors;
 }
 
-void load(std::string filename, float * buffer)
+std::vector<float> transpose(std::vector<float> image, int length)
 {
-	std::ifstream is (filename, std::ifstream::binary);
-	
-	if(is)
-	{
-		is.read (reinterpret_cast<char*> (buffer), LENGTH_1D*LENGTH_1D*sizeof(float));
-    	is.close();	
-	}
-	else
-	{
-		std::cout << "Error opening file.\n";
-	}    
+	for(int i = 0; i < length; ++i)
+	    for(int j = i+1; j < length; ++j)
+	        std::swap(image[length*i + j], image[length*j + i]);
+	return image;
 }
 
-void create_coeff(float * coeff_matrix)
+std::vector<float> transform1D(std::vector<float> image, std::vector<float> basis, int length)
 {
-	for (int k = 0; k < BLK_SIZE; ++k)
+	std::vector<float> image_DCT(length * length);
+	for (int row = 0; row < length; ++row)
 	{
-		float scale = (k == 0) ? sqrt(.5) : 1.;
-		for (int n = 0; n < BLK_SIZE; ++n)
-		{	
-			coeff_matrix[n + k*BLK_SIZE] = scale * cos(M_PI*k/BLK_SIZE * (n+.5));
-		}		
+		for (int col = 0; col < length; ++col)
+		{
+			image_DCT[row * length + col] = std::inner_product(image.begin() + row * length, 
+				image.begin() + row * length + length, basis.begin() + col * length, 0.) * sqrt(2) / sqrt(length);
+
+		}
+		
 	}
+	return image_DCT;
 }
 
-void transform(float * image, float * transformed, float * basis)
+std::vector<float> transform(std::vector<float> image, std::vector<float> basis)
 {
-	// Row-wise
-	float * temp = new float[BLK_SIZE*BLK_SIZE];
-	for (int row = 0; row < BLK_SIZE; ++row)
+	int length = sqrt(image.size());
+	std::vector<float> temp = transform1D(image, basis, length);
+	std::vector<float> transformed(image.size());
+	for (int row = 0; row < length; ++row)
 	{
-		for (int elem = 0; elem < BLK_SIZE; ++elem)
+		for (int col = 0; col < length; ++col)
 		{
 			float sum = 0;
-			for (int k = 0; k < BLK_SIZE; ++k)
+			for (int k = 0; k < length; ++k)
 			{
-				sum += image[k + row*BLK_SIZE] * basis[k + elem*BLK_SIZE];
+				sum += temp[row + k*length] * basis[k + col*length];
 			}
-			temp[elem + row*BLK_SIZE] = sum * sqrt(2)/sqrt(BLK_SIZE);
+			transformed[col + row*length] = sum * sqrt(2) / sqrt(length);
 		}
 	}
-
-	//Column-wise
-	for (int row = 0; row < BLK_SIZE; ++row)
-	{
-		for (int elem = 0; elem < BLK_SIZE; ++elem)
-		{
-			float sum = 0;
-			for (int k = 0; k < BLK_SIZE; ++k)
-			{
-				sum += temp[row + k*BLK_SIZE] * basis[k + elem*BLK_SIZE];
-			}
-			transformed[elem + row*BLK_SIZE] = sum * sqrt(2)/sqrt(BLK_SIZE);
-		}
-	}
-	delete temp;
+	return temp;
 }
 
-void transpose(float * bufferIn, float * bufferOut)
+std::vector<float> threshold(std::vector<float> image, float value = 1e-10)
 {
-	for (int i = 0; i < BLK_SIZE; ++i)
-	{
-		for (int j = 0; j < BLK_SIZE; ++j)
-		{
-			bufferOut[i + BLK_SIZE*j] = bufferIn[j + BLK_SIZE*i];
-		}
-	}
-}
-
-float computePsnr(float* image_noisy, float* image_ref, float max)
-{
-	float mse = 0;
-	for (int i = 0; i < LENGTH_1D; i++)
-	{
-		for (int j = 0; j < LENGTH_1D; j++)
-		{	
-			mse += pow((image_noisy[j+i*LENGTH_1D] - image_ref[j+i*LENGTH_1D]),2);
-		}
-	}
-	mse /= LENGTH_1D*LENGTH_1D;
-
-	return 10*log10(max*max/mse);
-}
-
-void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DCT_basis, float * IDCT_basis)
-{
-	// Takes a 8x8 block as input, does DCT -> Q -> IQ -> IDCT
-
-	// perform DCT
-	float * temp = new float[BLK_SIZE*BLK_SIZE];
-	transform(bufferIn, temp, DCT_basis);
-
-	// perform Q
-	int * temp2 = new int[BLK_SIZE*BLK_SIZE];
-	for (int i = 0; i < BLK_SIZE; ++i)
-	{
-		for (int j = 0; j < BLK_SIZE; ++j)
-		{
-			temp2[j + i*BLK_SIZE] = (int) (temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
-		}
-	}
-
-	// perform IQ
-	for (int i = 0; i < BLK_SIZE; ++i)
-	{
-		for (int j = 0; j < BLK_SIZE; ++j)
-		{
-			temp[j + i*BLK_SIZE] = (float) (temp2[j+i*BLK_SIZE]*Q[j+i*BLK_SIZE]);
-		}
-	}
-
-	// perform IDCT
-	transform(temp, bufferOut, IDCT_basis);
-
-	delete temp;
-	delete temp2;
-}
-
-void approximate(float * bufferIn, float * bufferOut, float * Q, float * DCT_basis, float * IDCT_basis)
-{
-	float * tempIn = new float[BLK_SIZE*BLK_SIZE];
-	float * tempOut = new float[BLK_SIZE*BLK_SIZE];
-	int col;
-	for (int step = 0; step < pow(LENGTH_1D/BLK_SIZE,2); ++step)
-	{	
-		// fill temp with correct block
-		for (int i = 0; i < BLK_SIZE; ++i)
-		{
-			for (int j = 0; j < BLK_SIZE; ++j)
-			{	
-				col = (int) (step/32);
-				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
-			}
-		}
-
-		approximateBlock(tempIn, tempOut, Q, DCT_basis, IDCT_basis);
-
-		// fill result image at the correct position
-		for (int i = 0; i < BLK_SIZE; ++i)
-		{
-			for (int j = 0; j < BLK_SIZE; ++j)
-			{
-				col = (int) (step/32);
-				bufferOut[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
-			}
-		}
-	}
-
-	delete tempIn;
-}
-
-void quantize8bpp()
-{
-
+	std::replace_if (image.begin(), image.end(), [&value](float i){return abs(i) < value;}, 0);
+	return image;
 }
 
 int main()
 {
-	// Generate and store Q
-	float * Q = new float[BLK_SIZE*BLK_SIZE];
-	create_Q(Q);
-	store(Q, "Q.raw", BLK_SIZE);
-
-	// Generate DCT and IDCT basis
-	float * DCT_basis = new float[BLK_SIZE*BLK_SIZE];
-	create_coeff(DCT_basis);
-	float * IDCT_basis = new float[BLK_SIZE*BLK_SIZE];
-	transpose(DCT_basis, IDCT_basis);
-
-	float * lena = new float[LENGTH_1D*LENGTH_1D];
+	// Perform 1D DCT
+	std::vector<float> signal(LENGTH_1D);
+	std::vector<float> DCT_vectors = DCT_vectors_basis();
+	store("DCT_vectors.raw", DCT_vectors);
+	std::cout << "DC coef: " << DCT_vectors[0] << std::endl;
+	
+	std::vector<float> lena(LENGTH_1D * LENGTH_1D);
 	load("lena_256x256.raw", lena);
+	std::vector<float> lena_DCT = transform(lena, DCT_vectors);
+	store("lena_DCT.raw", lena_DCT);
 
-	float * lenaJPEG = new float[LENGTH_1D*LENGTH_1D];
-	approximate(lena, lenaJPEG, Q, DCT_basis, IDCT_basis);
-	store(lenaJPEG, "lenaJPEG.raw", LENGTH_1D);
+	std::vector<float> IDCT_vectors = transpose(DCT_vectors, sqrt(DCT_vectors.size()));
+	std::vector<float> lena_new = transform(lena_DCT, IDCT_vectors);
+	store("lena_new.raw", lena_new);
+
+	lena_DCT = threshold(lena_DCT, 0);
+	std::vector<float> lena_new_t = transform(lena_DCT, IDCT_vectors);
+	store("lena_new_t.raw", lena_new_t);
+
+	std::cout << psnr(lena_new_t, lena, 255) << std::endl;
 
 	return 0;
 }

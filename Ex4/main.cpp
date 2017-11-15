@@ -1,103 +1,85 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <cmath>
+#include <functional>
+#include <numeric>
 #include <random>
+#include <algorithm>
 
-#define HEIGHT 	256
-#define WIDTH 	256						
+#define ROWS 256
+#define COLS 256
 
-void load(std::string filename, float * buffer)
+int store(std::string filename, std::vector<float> image)
 {
-	std::ifstream is (filename, std::ifstream::binary);
-	
-	if(is)
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
 	{
-		is.read (reinterpret_cast<char*> (buffer), HEIGHT*WIDTH*sizeof(float));
-    	is.close();	
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
 	}
 	else
 	{
-		std::cout << "Error opening file.\n";
-	}    
+		std::cout << "Cannot write into " << filename;
+		file.close();
+	} 
+		return 1;
 }
 
-void storeFloat(float* arrayIn)
-{
-	std::ofstream outfile;
-	outfile.open("outFloat.raw", std::ios::out | std::ios::binary);
-
-	if (outfile.is_open()) 
+int load(std::string filename, std::vector<float>& image)
+{	
+	std::ifstream file (filename, std::ios::binary);
+	if (file)
 	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), HEIGHT*WIDTH*sizeof(float));
+		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
 	}
-	outfile.close();
-}
-
-void normalize8bpp(float * bufferIn, float * bufferOut)
-{
-	for (int i = 0; i < HEIGHT*WIDTH; i++)
+	else 
 	{
-		bufferOut[i] = bufferIn[i]/255;
-	}
-}
-
-void addGaussianNoise(float * bufferIn, float * bufferOut)
-{
-	std::default_random_engine generator;
-  	std::normal_distribution<float> distribution(0, 0.024);
-
-	for (int h = 0; h < HEIGHT; h++)
-	{
-	    for (int w = 0; w < WIDTH; w++)
-	    {
-	        bufferOut[w + h*WIDTH] = bufferIn[w + h*WIDTH] + distribution(generator);
-
-	        // stay within [0;1]
-	        if (bufferOut[w + h*WIDTH] > 1.0)
-	        	bufferOut[w + h*WIDTH] = 1.0;
-	        else if (bufferOut[w + h*WIDTH] < 0.0)
-	        	bufferOut[w + h*WIDTH] = 0.0;
-	    }
+		std::cout << "Cannot read " << filename;
+		file.close();
+		return 1;
 	}
 }
 
-float computePsnr(float* image_noisy, float* image_ref, float max)
+std::vector<float> normalize8bpp(std::vector<float> image)
 {
-	float mse = 0;
-	for (int i = 0; i < WIDTH; i++)
-	{
-		for (int j = 0; j < HEIGHT; j++)
-		{
-			mse += pow((image_noisy[j+i*WIDTH] - image_ref[j+i*WIDTH]),2);
-		}
-	}
-	mse /= HEIGHT*WIDTH;
+	std::transform(image.begin(), image.end(), image.begin(), [](float val) { return val / 255; });
+	return image;
+}
 
-	return 10*log10(max*max/mse);
+
+
+template <class T> struct sqminus {
+  T operator() (const T& x, const T& y) const {return pow(x-y,2);}
+  typedef T first_argument_type;
+  typedef T second_argument_type;
+  typedef T result_type;
+};
+
+float psnr(std::vector<float> image, std::vector<float> ref, float max)
+{
+	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0, std::plus<float>(), sqminus<float>()));
+}
+
+std::vector<float> addGaussianNoise(std::vector<float> image, float std = 0.024)
+{
+	std::default_random_engine gen;
+	std::normal_distribution<float> dis(0, std);
+	std::transform(image.begin(), image.end(), image.begin(), [&](float val){ return val + dis(gen);});
+	return image;
 }
 
 int main()
 {
-	std::cout << "_______________________\n\n";
-
-	// load lena 32bpp
-	float * lena = new float[HEIGHT*WIDTH];
+	std::vector<float> lena(ROWS*COLS);
 	load("lena_256x256.raw", lena);
+	std::vector<float> lena8 = normalize8bpp(lena);
+	std::vector<float> noisyLena8 = addGaussianNoise(lena8);	
+	store("lena8.raw", lena8);
+	store("lena8noisy.raw", noisyLena8);
 
-	// Convert to [0;1]
-	float * lena01 = new float[HEIGHT*WIDTH];
-	normalize8bpp(lena, lena01);
-
-	// Add noise
-	float * lenaNoisy = new float[HEIGHT*WIDTH];
-	addGaussianNoise(lena01, lenaNoisy);
-
-	storeFloat(lena01);
-	float psnr = computePsnr(lena01, lenaNoisy, 1.0);
-	printf("PSNR is %.2f dB\n", psnr); 
-
-	// Free memory
-	delete lena;
-	delete lena01;
-	delete lenaNoisy;
 	return 0;
 }

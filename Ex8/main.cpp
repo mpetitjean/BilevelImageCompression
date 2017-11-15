@@ -1,196 +1,145 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
-#define LENGTH_1D	256
+#define LENGTH_1D	256 
 
-void create_coeff(float * coeff_matrix)
+int store(std::string filename, std::vector<float> image)
 {
-	for (int k = 0; k < LENGTH_1D; ++k)
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
 	{
-		float scale = (k == 0) ? sqrt(.5) : 1.;
-		for (int n = 0; n < LENGTH_1D; ++n)
-		{	
-			coeff_matrix[n + k*LENGTH_1D] = scale * cos(M_PI*k/LENGTH_1D * (n+.5));
-		}		
-	}
-}
-
-void store(float* arrayIn, std::string filename)
-{
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out | std::ios::binary);
-
-	if (outfile.is_open()) 
-	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), LENGTH_1D*LENGTH_1D*sizeof(float));
-	}
-	outfile.close();
-}
-
-void load(std::string filename, float * buffer)
-{
-	std::ifstream is (filename, std::ifstream::binary);
-	
-	if(is)
-	{
-		is.read (reinterpret_cast<char*> (buffer), LENGTH_1D*LENGTH_1D*sizeof(float));
-    	is.close();	
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
 	}
 	else
 	{
-		std::cout << "Error opening file.\n";
-	}    
+		std::cout << "Cannot write into " << filename;
+		file.close();
+	} 
+		return 1;
 }
 
-void transform(float * image, float * transformed, float * basis)
-{
-	// Row-wise
-	float * temp = new float[LENGTH_1D*LENGTH_1D];
-	for (int row = 0; row < LENGTH_1D; ++row)
+int load(std::string filename, std::vector<float>& image)
+{	
+	std::ifstream file (filename, std::ios::binary);
+	if (file)
 	{
-		for (int elem = 0; elem < LENGTH_1D; ++elem)
+		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
+	}
+	else 
+	{
+		std::cout << "Cannot read " << filename;
+		file.close();
+		return 1;
+	}
+}
+
+template <class T> struct sqminus {
+  T operator() (const T& x, const T& y) const {return pow(x-y,2);}
+  typedef T first_argument_type;
+  typedef T second_argument_type;
+  typedef T result_type;
+};
+
+float psnr(std::vector<float> image, std::vector<float> ref, float max)
+{
+	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0,
+	 std::plus<float>(), sqminus<float>()));
+}
+
+std::vector<float> DCT_vectors_basis(int length = LENGTH_1D)
+{
+	std::vector<float> DCT_vectors(length * length);
+	for (int k = 0; k < length; ++k)
+	{
+	    double s = (k == 0) ? sqrt(.5) : 1.;
+	    for (int n = 0; n < length; ++n)
+	    {
+	    	DCT_vectors[k * length + n]= s * cos(M_PI * (n + .5) * k / length);
+	    }
+	}
+  return DCT_vectors;
+}
+
+std::vector<float> transpose(std::vector<float> image, int length)
+{
+	for(int i = 0; i < length; ++i)
+	    for(int j = i+1; j < length; ++j)
+	        std::swap(image[length*i + j], image[length*j + i]);
+	return image;
+}
+
+std::vector<float> transform1D(std::vector<float> image, std::vector<float> basis, int length)
+{
+	std::vector<float> image_DCT(length * length);
+	for (int row = 0; row < length; ++row)
+	{
+		for (int col = 0; col < length; ++col)
+		{
+			image_DCT[row * length + col] = std::inner_product(image.begin() + row * length, 
+				image.begin() + row * length + length, basis.begin() + col * length, 0.) * sqrt(2) / sqrt(length);
+
+		}
+		
+	}
+	return image_DCT;
+}
+
+std::vector<float> transform(std::vector<float> image, std::vector<float> basis)
+{
+	int length = sqrt(image.size());
+	std::vector<float> temp = transform1D(image, basis, length);
+	std::vector<float> transformed(image.size());
+	for (int row = 0; row < length; ++row)
+	{
+		for (int col = 0; col < length; ++col)
 		{
 			float sum = 0;
-			for (int k = 0; k < LENGTH_1D; ++k)
+			for (int k = 0; k < length; ++k)
 			{
-				sum += image[k + row*LENGTH_1D] * basis[k + elem*LENGTH_1D];
+				sum += temp[row + k*length] * basis[k + col*length];
 			}
-			temp[elem + row*LENGTH_1D] = sum * sqrt(2)/sqrt(LENGTH_1D);
+			transformed[col + row*length] = sum * sqrt(2) / sqrt(length);
 		}
 	}
-
-	//Column-wise
-	for (int row = 0; row < LENGTH_1D; ++row)
-	{
-		for (int elem = 0; elem < LENGTH_1D; ++elem)
-		{
-			float sum = 0;
-			for (int k = 0; k < LENGTH_1D; ++k)
-			{
-				sum += temp[row + k*LENGTH_1D] * basis[k + elem*LENGTH_1D];
-			}
-			transformed[elem + row*LENGTH_1D] = sum * sqrt(2)/sqrt(LENGTH_1D);
-		}
-	}
-	delete temp;
+	return temp;
 }
 
-void threshold(float * bufferIn, float * bufferOut, float th)
+std::vector<float> threshold(std::vector<float> image, float value = 1e-10)
 {
-	for (int i = 0; i < LENGTH_1D; ++i)
-	{
-		for (int j = 0; j < LENGTH_1D; ++j)
-		{
-			bufferOut[i + LENGTH_1D*j] = bufferIn[i + LENGTH_1D*j];
-			if (abs(bufferOut[i + LENGTH_1D*j]) < th)
-			{
-				bufferOut[i + LENGTH_1D*j] = 0.;
-			}
-		}
-	}
-}
-
-void transpose(float * bufferIn, float * bufferOut)
-{
-	for (int i = 0; i < LENGTH_1D; ++i)
-	{
-		for (int j = 0; j < LENGTH_1D; ++j)
-		{
-			bufferOut[i + LENGTH_1D*j] = bufferIn[j + LENGTH_1D*i];
-		}
-	}
-}
-
-float computePsnr(float* image_noisy, float* image_ref, float max)
-{
-	float mse = 0;
-	for (int i = 0; i < LENGTH_1D; i++)
-	{
-		for (int j = 0; j < LENGTH_1D; j++)
-		{	
-			mse += pow((image_noisy[j+i*LENGTH_1D] - image_ref[j+i*LENGTH_1D]),2);
-		}
-	}
-	mse /= LENGTH_1D*LENGTH_1D;
-
-	return 10*log10(max*max/mse);
+	std::replace_if (image.begin(), image.end(), [&value](float i){return abs(i) < value;}, 0);
+	return image;
 }
 
 int main()
 {
-	// Compute and show DCT basis functions
-	float * DCT_basis = new float[LENGTH_1D*LENGTH_1D];
-	create_coeff(DCT_basis);
-	store(DCT_basis, "coeff.raw");
-	std::cout << "The DC coefficient is " << DCT_basis[0] << std::endl;
-
-	// First base vector - check that all coeff are the same
-	float previous_coeff = DCT_basis[0];
-	for (int i = 1; i < LENGTH_1D; ++i)
-	{
-		if (previous_coeff != DCT_basis[i])
-		{
-			std::cout << "The elements of the first basis funtions are not all equal !";
-		}
-	}
-
-	// Perform a DCT
-	float * lena = new float[LENGTH_1D*LENGTH_1D];
-	float * DCT_lena = new float[LENGTH_1D*LENGTH_1D];
+	// Perform 1D DCT
+	std::vector<float> signal(LENGTH_1D);
+	std::vector<float> DCT_vectors = DCT_vectors_basis();
+	store("DCT_vectors.raw", DCT_vectors);
+	std::cout << "DC coef: " << DCT_vectors[0] << std::endl;
+	
+	std::vector<float> lena(LENGTH_1D * LENGTH_1D);
 	load("lena_256x256.raw", lena);
-	transform(lena, DCT_lena, DCT_basis);
-	store(DCT_lena, "DCT_lena.raw");
+	std::vector<float> lena_DCT = transform(lena, DCT_vectors);
+	store("lena_DCT.raw", lena_DCT);
 
-	// Use a threshold on the DCT coeff, various coeff values
-	float * threshold1 = new float[LENGTH_1D*LENGTH_1D];
-	float * threshold2 = new float[LENGTH_1D*LENGTH_1D];
-	float * threshold3 = new float[LENGTH_1D*LENGTH_1D];
+	std::vector<float> IDCT_vectors = transpose(DCT_vectors, sqrt(DCT_vectors.size()));
+	std::vector<float> lena_new = transform(lena_DCT, IDCT_vectors);
+	store("lena_new.raw", lena_new);
 
-	float t1 = 1.0;
-	float t2 = 50.0;
-	float t3 = 200.0;
-	threshold(DCT_lena, threshold1, t1);
-	threshold(DCT_lena, threshold2, t2);
-	threshold(DCT_lena, threshold3, t3);
+	lena_DCT = threshold(lena_DCT, 0);
+	std::vector<float> lena_new_t = transform(lena_DCT, IDCT_vectors);
+	store("lena_new_t.raw", lena_new_t);
 
-	// Perform IDCT
-	float * IDCT_basis = new float[LENGTH_1D*LENGTH_1D];
-	float * IDCT_lena =  new float[LENGTH_1D*LENGTH_1D];
-	transpose(DCT_basis, IDCT_basis);
-	transform(DCT_lena, IDCT_lena, IDCT_basis);
-	store(IDCT_lena, "IDCT_lena.raw");
-
-	float * IDCT_lena_t1 = new float[LENGTH_1D*LENGTH_1D];
-	transform(threshold1, IDCT_lena_t1, IDCT_basis);
-	store(IDCT_lena_t1, "IDCT_lena_t1.raw");
-	delete threshold1;
-	float psnr = computePsnr(IDCT_lena_t1, lena, 255.0);
-	std::cout << "The PSNR when the threshold is " << t1 << " is " << psnr << " dB." << std::endl;
-
-	float * IDCT_lena_t2 = new float[LENGTH_1D*LENGTH_1D];
-	transform(threshold2, IDCT_lena_t2, IDCT_basis);
-	store(IDCT_lena_t2, "IDCT_lena_t2.raw");
-	delete threshold2;
-	psnr = computePsnr(IDCT_lena_t2, lena, 255.0);
-	std::cout << "The PSNR when the threshold is " << t2 << " is " << psnr << " dB." << std::endl;
-
-	float * IDCT_lena_t3 = new float[LENGTH_1D*LENGTH_1D];
-	transform(threshold3, IDCT_lena_t3, IDCT_basis);
-	store(IDCT_lena_t3, "IDCT_lena_t3.raw");
-	delete threshold3;
-	psnr = computePsnr(IDCT_lena_t3, lena, 255.0);
-	std::cout << "The PSNR when the threshold is " << t3 << " is " << psnr << " dB." << std::endl;
-
-	// Free memory
-	delete lena;
-	delete DCT_basis;
-	delete DCT_lena;
-	delete IDCT_basis;
-	delete IDCT_lena;
-	delete IDCT_lena_t1;
-	delete IDCT_lena_t2;
-	delete IDCT_lena_t3;
+	std::cout << psnr(lena_new_t, lena, 255) << std::endl;
 
 	return 0;
 }

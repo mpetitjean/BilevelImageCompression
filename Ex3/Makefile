@@ -1,18 +1,20 @@
-PROGRAM_NAME = main
+CC = g++
+CFLAGS = -std=c++11 -Wall -Wextra -pedantic
 
-OBJECT_FILES = $(PROGRAM_NAME).o
-CFLAGS = -Wall -Wextra -pedantic
+SUFFIXES = .cpp .o
+.SUFFIXES: $(SUFFIXES) .
 
-$(PROGRAM_NAME) : $(OBJECT_FILES)
-	g++ $(CFLAGS) -o $@ $(OBJECT_FILES)
+PROG = main
+OBJS = $(PROG).o
 
-$(PROGRAM_NAME).o : $(PROGRAM_NAME).cpp
-	g++ $(CFLAGS) -c $<
+all: $(PROG) 
+	./$(PROG) $(ARGS)
 
-clean :
-	$(RM) $(PROGRAM_NAME)
-	$(RM) $(OBJECT_FILES)
-	$(RM) *~ *.bak
+$(PROG): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
-run :
-	@$(MAKE) && ./$(PROGRAM_NAME) $(ARGS)
+.cpp.o:
+	$(CC) $(CFLAGS) -c $<
+
+clean:
+	$(RM) $(PROG) $(OBJS) *~ *.bak 

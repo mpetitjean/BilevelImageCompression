@@ -1,35 +1,38 @@
-#include <cmath>
 #include <iostream>
-#include <fstream>
+#include <vector>
+#include <cmath>
+#include<fstream>
 
-#define WIDTH 	256
-#define HEIGHT 	256
+#define ROWS 256
+#define COLS 256
 
-void store(float* arrayIn)
+int store(std::string filename, std::vector<float> image)
 {
-	std::ofstream outfile;
-	outfile.open("out.raw", std::ios::out | std::ios::binary);
-
-	if (outfile.is_open()) 
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
 	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), HEIGHT*WIDTH*sizeof(float));
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.close();
+		return 0;
 	}
-	outfile.close();
+	else 
+	{
+		std::cout << "Cannot write into " << filename;
+		file.close();
+		return 1;
+	}
 }
 
-
-int main(void)
+int main()
 {
-	float I[WIDTH*HEIGHT];
-
-	for (int w = 0; w < WIDTH; w++)
+	std::vector<float> cst(ROWS*COLS);
+	for (int i = 0; i < ROWS; ++i)
 	{
-		for (int h = 0; h < HEIGHT; h++)
+		for (int j = 0; j < COLS; ++j)
 		{
-			I[w + h*HEIGHT] = 0.5 + 0.5*cos(w*M_PI/32)*cos(h*M_PI/64);
+			cst[i*COLS + j] = .5 + .5 * cos(i * M_PI / 32) * cos(j * M_PI / 64);
 		}
 	}
-	store(I);
-
-	return 0;
+	store("cst.raw", cst);
+	return 0; 
 }
