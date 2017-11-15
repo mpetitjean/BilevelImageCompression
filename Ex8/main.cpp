@@ -121,7 +121,6 @@ std::vector<float> threshold(std::vector<float> image, float value = 1e-10)
 int main()
 {
 	// Perform 1D DCT
-	std::vector<float> signal(LENGTH_1D);
 	std::vector<float> DCT_vectors = DCT_vectors_basis();
 	store("DCT_vectors.raw", DCT_vectors);
 	std::cout << "DC coef: " << DCT_vectors[0] << std::endl;
