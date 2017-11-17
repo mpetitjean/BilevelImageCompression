@@ -5,7 +5,7 @@
 #define WIDTH 	256
 #define HEIGHT 	256
 
-void store(float* arrayIn)
+void store(float arrayIn[][HEIGHT])
 {
 	std::ofstream outfile;
 	outfile.open("out.raw", std::ios::out | std::ios::binary);
@@ -20,13 +20,13 @@ void store(float* arrayIn)
 
 int main(void)
 {
-	float I[WIDTH*HEIGHT];
+	float I[WIDTH][HEIGHT];
 
-	for (int w = 0; w < WIDTH; w++)
+	for (int i = 0; i < WIDTH; i++)
 	{
-		for (int h = 0; h < HEIGHT; h++)
+		for (int j = 0; j < HEIGHT; j++)
 		{
-			I[w + h*HEIGHT] = 0.5 + 0.5*cos(w*M_PI/32)*cos(h*M_PI/64);
+			I[i][j] = 0.5 + 0.5*cos(i*M_PI/32)*cos(j*M_PI/64);
 		}
 	}
 	store(I);
