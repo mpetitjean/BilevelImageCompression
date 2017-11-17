@@ -117,6 +117,30 @@ float computePsnr(float* image_noisy, float* image_ref, float max)
 	return 10*log10(max*max/mse);
 }
 
+void quantize8bpp(float * bufferIn, float * bufferOut)
+{
+	// find max and min values
+	float min = bufferIn[0];
+	float max = bufferIn[0];
+	for (int i = 1; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		if( bufferIn[i] > max)
+		{
+			max = bufferIn[i];
+		}
+		if (bufferIn[i] < min)
+		{
+			min = bufferIn[i];
+		}
+	}
+
+	float ratio = (max - min);
+	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		bufferOut[i] = (bufferIn[i]-min)/ratio*255.0;
+	}
+}
+
 int main()
 {
 	// Compute and show DCT basis functions
@@ -148,8 +172,8 @@ int main()
 	float * threshold3 = new float[LENGTH_1D*LENGTH_1D];
 
 	float t1 = 1.0;
-	float t2 = 50.0;
-	float t3 = 200.0;
+	float t2 = 10.0;
+	float t3 = 50.0;
 	threshold(DCT_lena, threshold1, t1);
 	threshold(DCT_lena, threshold2, t2);
 	threshold(DCT_lena, threshold3, t3);
@@ -158,28 +182,38 @@ int main()
 	float * IDCT_basis = new float[LENGTH_1D*LENGTH_1D];
 	float * IDCT_lena =  new float[LENGTH_1D*LENGTH_1D];
 	transpose(DCT_basis, IDCT_basis);
+	store(IDCT_basis, "coeffI.raw");
 	transform(DCT_lena, IDCT_lena, IDCT_basis);
 	store(IDCT_lena, "IDCT_lena.raw");
 
 	float * IDCT_lena_t1 = new float[LENGTH_1D*LENGTH_1D];
+	float * IDCT_lena_t18bpp = new float[LENGTH_1D*LENGTH_1D];
 	transform(threshold1, IDCT_lena_t1, IDCT_basis);
-	store(IDCT_lena_t1, "IDCT_lena_t1.raw");
+	quantize8bpp(IDCT_lena_t1, IDCT_lena_t18bpp);
+	store(IDCT_lena_t18bpp, "IDCT_lena_t1.raw");
 	delete threshold1;
-	float psnr = computePsnr(IDCT_lena_t1, lena, 255.0);
+	delete IDCT_lena_t1;
+	float psnr = computePsnr(IDCT_lena_t18bpp, lena, 255.0);
 	std::cout << "The PSNR when the threshold is " << t1 << " is " << psnr << " dB." << std::endl;
 
 	float * IDCT_lena_t2 = new float[LENGTH_1D*LENGTH_1D];
+	float * IDCT_lena_t28bpp = new float[LENGTH_1D*LENGTH_1D];
 	transform(threshold2, IDCT_lena_t2, IDCT_basis);
-	store(IDCT_lena_t2, "IDCT_lena_t2.raw");
+	quantize8bpp(IDCT_lena_t2, IDCT_lena_t28bpp);
+	store(IDCT_lena_t28bpp, "IDCT_lena_t2.raw");
 	delete threshold2;
-	psnr = computePsnr(IDCT_lena_t2, lena, 255.0);
+	delete IDCT_lena_t2;
+	psnr = computePsnr(IDCT_lena_t28bpp, lena, 255.0);
 	std::cout << "The PSNR when the threshold is " << t2 << " is " << psnr << " dB." << std::endl;
 
 	float * IDCT_lena_t3 = new float[LENGTH_1D*LENGTH_1D];
+	float * IDCT_lena_t38bpp = new float[LENGTH_1D*LENGTH_1D];
 	transform(threshold3, IDCT_lena_t3, IDCT_basis);
-	store(IDCT_lena_t3, "IDCT_lena_t3.raw");
+	quantize8bpp(IDCT_lena_t3, IDCT_lena_t38bpp);
+	store(IDCT_lena_t38bpp, "IDCT_lena_t3.raw");
 	delete threshold3;
-	psnr = computePsnr(IDCT_lena_t3, lena, 255.0);
+	delete IDCT_lena_t3;
+	psnr = computePsnr(IDCT_lena_t38bpp, lena, 255.0);
 	std::cout << "The PSNR when the threshold is " << t3 << " is " << psnr << " dB." << std::endl;
 
 	// Free memory
@@ -188,9 +222,9 @@ int main()
 	delete DCT_lena;
 	delete IDCT_basis;
 	delete IDCT_lena;
-	delete IDCT_lena_t1;
-	delete IDCT_lena_t2;
-	delete IDCT_lena_t3;
+	delete IDCT_lena_t18bpp;
+	delete IDCT_lena_t28bpp;
+	delete IDCT_lena_t38bpp;
 
 	return 0;
 }
