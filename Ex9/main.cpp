@@ -212,6 +212,7 @@ void approximate(float * bufferIn, float * bufferOut, float * Q, float * DCT_bas
 	float * tempIn = new float[BLK_SIZE*BLK_SIZE];
 	float * tempOut = new float[BLK_SIZE*BLK_SIZE];
 	int col;
+
 	for (int step = 0; step < pow(LENGTH_1D/BLK_SIZE,2); ++step)
 	{	
 		// fill temp with correct block
@@ -238,11 +239,31 @@ void approximate(float * bufferIn, float * bufferOut, float * Q, float * DCT_bas
 	}
 
 	delete tempIn;
+	delete tempOut;
 }
 
-void quantize8bpp()
+void quantize8bpp(float * bufferIn, float * bufferOut)
 {
+	// find max and min values
+	float min = bufferIn[0];
+	float max = bufferIn[0];
+	for (int i = 1; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		if( bufferIn[i] > max)
+		{
+			max = bufferIn[i];
+		}
+		if (bufferIn[i] < min)
+		{
+			min = bufferIn[i];
+		}
+	}
 
+	float ratio = (max - min);
+	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		bufferOut[i] = (bufferIn[i]-min)/ratio*255.0;
+	}
 }
 
 int main()
@@ -258,12 +279,24 @@ int main()
 	float * IDCT_basis = new float[BLK_SIZE*BLK_SIZE];
 	transpose(DCT_basis, IDCT_basis);
 
+	// Read image
 	float * lena = new float[LENGTH_1D*LENGTH_1D];
 	load("lena_256x256.raw", lena);
 
+	// Apply the approximate function
 	float * lenaJPEG = new float[LENGTH_1D*LENGTH_1D];
 	approximate(lena, lenaJPEG, Q, DCT_basis, IDCT_basis);
 	store(lenaJPEG, "lenaJPEG.raw", LENGTH_1D);
+
+	// Clip to [0;255]
+	float * lenaJPEG8bpp = new float[LENGTH_1D*LENGTH_1D];
+	quantize8bpp(lenaJPEG, lenaJPEG8bpp);
+	store(lenaJPEG8bpp, "lenaJPEG8bpp.raw", LENGTH_1D);
+
+	// Compute PSNR
+	float psnr = computePsnr(lena, lenaJPEG8bpp, 255.0);
+	std::cout << "PSNR after 50% JPEG approximation is " << psnr << " dB" << std::endl;
+
 
 	return 0;
 }
