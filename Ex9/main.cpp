@@ -182,12 +182,13 @@ void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DC
 	transform(bufferIn, temp, DCT_basis);
 
 	// perform Q
-	int * temp2 = new int[BLK_SIZE*BLK_SIZE];
+	float * temp2 = new float[BLK_SIZE*BLK_SIZE];
 	for (int i = 0; i < BLK_SIZE; ++i)
 	{
 		for (int j = 0; j < BLK_SIZE; ++j)
 		{
-			temp2[j + i*BLK_SIZE] = (int) (temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
+			//temp2[j + i*BLK_SIZE] = (int) (temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
+			temp2[j + i*BLK_SIZE] = round(temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
 		}
 	}
 
@@ -196,7 +197,7 @@ void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DC
 	{
 		for (int j = 0; j < BLK_SIZE; ++j)
 		{
-			temp[j + i*BLK_SIZE] = (float) (temp2[j+i*BLK_SIZE]*Q[j+i*BLK_SIZE]);
+			temp[j + i*BLK_SIZE] = (temp2[j+i*BLK_SIZE]*Q[j+i*BLK_SIZE]);
 		}
 	}
 
@@ -247,6 +248,19 @@ void quantize8bpp(float * bufferIn, float * bufferOut)
 	// find max and min values
 	float min = bufferIn[0];
 	float max = bufferIn[0];
+
+	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		if( bufferIn[i] > 255.0)
+		{
+			bufferIn[i] = 255.0;
+		}
+		else if (bufferIn[i] < 0.0)
+		{
+			bufferIn[i] = 0.0;
+		}
+	}
+
 	for (int i = 1; i < LENGTH_1D*LENGTH_1D; ++i)
 	{
 		if( bufferIn[i] > max)
