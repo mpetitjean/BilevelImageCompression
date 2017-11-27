@@ -8,23 +8,24 @@
 #define LENGTH_1D	256 
 
 
-
-int store(std::string filename, std::vector<float> image)
+template <class T>
+int store(std::string filename, std::vector<T> image)
 {
 	std::ofstream file (filename, std::ios::binary);
 	if (file)
-		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(float));
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(T));
 	else
 		std::cout << "Cannot write into " << filename << std::endl;
 	file.close();
 	return file.rdstate();
 }
 
-int load(std::string filename, std::vector<float>& image)
+template <class T>
+int load(std::string filename, std::vector<T>& image)
 {	
 	std::ifstream file (filename, std::ios::binary);
 	if (file)
-		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(float));
+		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(T));
 	else 
 		std::cout << "Cannot read " << filename << std::endl;
 	file.close();
@@ -38,7 +39,7 @@ template <class T> struct sqminus {
   typedef T result_type;
 };
 
-float psnr(std::vector<float> image, std::vector<float> ref, float max)
+float psnr(std::vector<float> image, std::vector<float> ref, float max = 255)
 {
 	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0,
 	 std::plus<float>(), sqminus<float>()));
@@ -49,7 +50,7 @@ std::vector<float> create_Q()
 	std::vector<float> buffer{{16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 
 		26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 
 		80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 
-		92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 130, 99}};
+		92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99}};
 	return buffer;
 }
 
@@ -122,7 +123,8 @@ std::vector<float> approximateBlock(std::vector<float> block, std::vector<float>
 	std::vector<int> temp(Q.size());
 	block = transform(block, tcoef);
 
-	std::transform(block.begin(), block.end(), Q.begin(), temp.begin(), std::divides<int>());
+	std::transform(block.begin(), block.end(), Q.begin(), temp.begin(), std::divides<float>());
+	std::transform(temp.begin(), temp.end(), temp.begin(), round);
 	std::transform(temp.begin(), temp.end(), Q.begin(), block.begin(), std::multiplies<float>());
 
 	return transform(block, fcoef);
@@ -159,6 +161,13 @@ std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoe
 
 }
 
+std::vector<uint8_t> quantize8bpp(std::vector<float> image)
+{
+	std::vector<uint8_t> nImage(image.size());
+	std::transform(image.begin(), image.end(), nImage.begin(), [](float pixel){return (uint8_t) std::max(0., std::min(255., round(pixel)));});
+	return nImage;
+}
+
 int main()
 {
 	std::vector<float> Q = create_Q();
@@ -172,6 +181,8 @@ int main()
 
 	std::vector<float> lenaJPEG = approximate(lena, DCT_vectors, IDCT_vectors, Q);
 	store("lenaJPEG.raw", lenaJPEG);
-
+	std::vector<uint8_t> lenaJPEG8bpp = quantize8bpp(lenaJPEG);
+	store("lenaJPEG8bpp.raw", lenaJPEG8bpp);
+	std::cout << psnr(lenaJPEG, lena) << std::endl;
 	return 0;
 }
