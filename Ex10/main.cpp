@@ -162,46 +162,47 @@ void DCT1(float * bufferIn, float * bufferOut, float * DCT_basis)
 void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
 {
 	// 32 × 32 interleaved DCT coefficients
-	float * tempIn = new float[BLK_SIZE2*BLK_SIZE2];
-	float * tempOut = new float[BLK_SIZE2*BLK_SIZE2];
+	float * tempIn = new float[BLK_SIZE*BLK_SIZE];
+	float * tempOut = new float[BLK_SIZE*BLK_SIZE];
 	float * tempDCT = new float[LENGTH_1D*LENGTH_1D];
 	int col;
 
-	for (int step = 0; step < pow(LENGTH_1D/BLK_SIZE2,2); ++step)
+	for (int step = 0; step < pow(LENGTH_1D/BLK_SIZE,2); ++step)
 	{	
 		// fill temp with correct block
-		for (int i = 0; i < BLK_SIZE2; ++i)
+		for (int i = 0; i < BLK_SIZE; ++i)
 		{
-			for (int j = 0; j < BLK_SIZE2; ++j)
+			for (int j = 0; j < BLK_SIZE; ++j)
 			{	
-				col = (int) (step/8);
-				tempIn[j + i*BLK_SIZE2] = bufferIn[j + (step%8)*BLK_SIZE2 + LENGTH_1D*col*BLK_SIZE2 + i*LENGTH_1D];
+				col = (int) (step/32);
+				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
 			}
 		}
 
-		transform32(tempIn, tempOut, DCT_basis);
+		transform(tempIn, tempOut, DCT_basis);
 
 		// fill result image at classic position
-		for (int i = 0; i < BLK_SIZE2; ++i)
+		for (int i = 0; i < BLK_SIZE; ++i)
 		{
-			for (int j = 0; j < BLK_SIZE2; ++j)
+			for (int j = 0; j < BLK_SIZE; ++j)
 			{
-				col = (int) (step/8);
-				tempDCT[j + (step%8)*BLK_SIZE2 + LENGTH_1D*col*BLK_SIZE2 + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE2];
+				col = (int) (step/32);
+				tempDCT[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
 			}
 		}
 	}
 
 	// Reorganize to interleaved position
-	for (int i = 0; i < BLK_SIZE2*BLK_SIZE2; ++i)
+	for (int step = 0; step < BLK_SIZE*BLK_SIZE; ++step)
 	{
-		for (int row = 0; row < BLK_SIZE; ++row)
+		for (int row = 0; row < BLK_SIZE2; ++row)
 		{
-			for (int col = 0; col < BLK_SIZE; ++col)
+			for (int col = 0; col < BLK_SIZE2; ++col)
 			{
-				bufferOut[row * LENGTH_1D + col + (i%BLK_SIZE2)*BLK_SIZE + i/32*LENGTH_1D*BLK_SIZE] = 
-					tempDCT;
-				//std::cout << row * LENGTH_1D + col + (i%8)*BLK_SIZE2 + i/8*LENGTH_1D*BLK_SIZE2 << std::endl;
+				bufferOut[row * LENGTH_1D + col + (step%BLK_SIZE)*BLK_SIZE2 + step/BLK_SIZE*LENGTH_1D*BLK_SIZE2] = 
+				tempDCT[(step%BLK_SIZE) + (step / BLK_SIZE) * LENGTH_1D + col * BLK_SIZE + row * LENGTH_1D * BLK_SIZE];
+				// if (step == 32 * 32 - 1)
+				// 	std::cout << col * 32 + row * 256 * 32 + step%32 + (step/32)*256<< std::endl;
 			}
 		}
 	}
@@ -209,6 +210,7 @@ void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
 
 	delete tempIn;
 	delete tempOut;
+	delete tempDCT;
 }
 
 int main()
@@ -231,11 +233,11 @@ int main()
 	create_coeff32(DCT_basis32);
 
 	float * DCT32 = new float[LENGTH_1D*LENGTH_1D];
-	DCT2(lena, DCT32, DCT_basis32);
+	DCT2(lena, DCT32, DCT_basis);
 	store(DCT32, "DCT32.raw", LENGTH_1D);
 
-	int blk = 35;
-	printf("%d\n",(int) (blk/32)*LENGTH_1D + blk%BLK_SIZE2);
+	// int blk = 35;
+	// printf("%d\n",(int) (blk/32)*LENGTH_1D + blk%BLK_SIZE2);
 
 	return 0;
 }
