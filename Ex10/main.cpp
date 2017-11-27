@@ -4,6 +4,7 @@
 
 #define LENGTH_1D	256
 #define BLK_SIZE	8
+#define BLK_SIZE2	32
 
 void store(float* arrayIn, std::string filename, int size)
 {
@@ -44,6 +45,18 @@ void create_coeff(float * coeff_matrix)
 	}
 }
 
+void create_coeff32(float * coeff_matrix)
+{
+	for (int k = 0; k < BLK_SIZE2; ++k)
+	{
+		float scale = (k == 0) ? sqrt(.5) : 1.;
+		for (int n = 0; n < BLK_SIZE2; ++n)
+		{	
+			coeff_matrix[n + k*BLK_SIZE2] = scale * cos(M_PI*k/BLK_SIZE2 * (n+.5));
+		}		
+	}
+}
+
 void transform(float * image, float * transformed, float * basis)
 {
 	// Row-wise
@@ -75,17 +88,6 @@ void transform(float * image, float * transformed, float * basis)
 		}
 	}
 	delete temp;
-}
-
-void transpose(float * bufferIn, float * bufferOut)
-{
-	for (int i = 0; i < BLK_SIZE; ++i)
-	{
-		for (int j = 0; j < BLK_SIZE; ++j)
-		{
-			bufferOut[i + BLK_SIZE*j] = bufferIn[j + BLK_SIZE*i];
-		}
-	}
 }
 
 void DCT1(float * bufferIn, float * bufferOut, float * DCT_basis)
@@ -124,6 +126,45 @@ void DCT1(float * bufferIn, float * bufferOut, float * DCT_basis)
 	delete tempOut;
 }
 
+void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
+{
+	// 32 × 32 interleaved DCT coefficients
+	float * tempIn = new float[BLK_SIZE2*BLK_SIZE2];
+	float * tempOut = new float[BLK_SIZE2*BLK_SIZE2];
+	int col;
+
+	for (int step = 0; step < pow(LENGTH_1D/BLK_SIZE2,2); ++step)
+	{	
+		// fill temp with correct block
+		for (int i = 0; i < BLK_SIZE2; ++i)
+		{
+			for (int j = 0; j < BLK_SIZE2; ++j)
+			{	
+				col = (int) (step/32);
+				tempIn[j + i*BLK_SIZE2] = bufferIn[j + (step%32)*BLK_SIZE2 + LENGTH_1D*col*BLK_SIZE2 + i*LENGTH_1D];
+			}
+		}
+
+		transform(tempIn, tempOut, DCT_basis);
+
+		// fill result image at classic position
+		for (int i = 0; i < BLK_SIZE2; ++i)
+		{
+			for (int j = 0; j < BLK_SIZE2; ++j)
+			{
+				col = (int) (step/32);
+				bufferOut[j + (step%32)*BLK_SIZE2 + LENGTH_1D*col*BLK_SIZE2 + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE2];
+			}
+		}
+	}
+
+	// Reorganize to interleaved position
+	
+
+	delete tempIn;
+	delete tempOut;
+}
+
 int main()
 {
 	// Generate DCT 8x8 basis
@@ -138,6 +179,10 @@ int main()
 	float * DCT88 = new float[LENGTH_1D*LENGTH_1D];
 	DCT1(lena, DCT88, DCT_basis);
 	store(DCT88, "DCT88.raw", LENGTH_1D);
+
+	// Generate DCT 32x32 basis
+	float * DCT_basis32 = new float[BLK_SIZE2*BLK_SIZE2];
+	create_coeff32(DCT_basis32);
 
 	return 0;
 }
