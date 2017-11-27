@@ -181,6 +181,9 @@ void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DC
 	float * temp = new float[BLK_SIZE*BLK_SIZE];
 	transform(bufferIn, temp, DCT_basis);
 
+	store(DCT_basis, "basis.raw", BLK_SIZE);
+	store(temp, "transformed.raw", LENGTH_1D);
+
 	// perform Q
 	float * temp2 = new float[BLK_SIZE*BLK_SIZE];
 	for (int i = 0; i < BLK_SIZE; ++i)
