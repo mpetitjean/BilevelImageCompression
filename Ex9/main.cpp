@@ -109,7 +109,7 @@ void create_coeff(float * coeff_matrix)
 		float scale = (k == 0) ? sqrt(.5) : 1.;
 		for (int n = 0; n < BLK_SIZE; ++n)
 		{	
-			coeff_matrix[n + k*BLK_SIZE] = scale * cos(M_PI*k/BLK_SIZE * (n+.5));
+			coeff_matrix[n + k*BLK_SIZE] = scale * sqrt(2)/sqrt(BLK_SIZE) * cos(M_PI*k/BLK_SIZE * (n+.5));
 		}		
 	}
 }
@@ -127,7 +127,7 @@ void transform(float * image, float * transformed, float * basis)
 			{
 				sum += image[k + row*BLK_SIZE] * basis[k + elem*BLK_SIZE];
 			}
-			temp[elem + row*BLK_SIZE] = sum * sqrt(2)/sqrt(BLK_SIZE);
+			temp[elem + row*BLK_SIZE] = sum;
 		}
 	}
 
@@ -141,7 +141,7 @@ void transform(float * image, float * transformed, float * basis)
 			{
 				sum += temp[row + k*BLK_SIZE] * basis[k + elem*BLK_SIZE];
 			}
-			transformed[elem + row*BLK_SIZE] = sum * sqrt(2)/sqrt(BLK_SIZE);
+			transformed[elem + row*BLK_SIZE] = sum;
 		}
 	}
 	delete temp;
@@ -182,7 +182,7 @@ void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DC
 	transform(bufferIn, temp, DCT_basis);
 
 	store(DCT_basis, "basis.raw", BLK_SIZE);
-	store(temp, "transformed.raw", LENGTH_1D);
+	store(temp, "transformed.raw", BLK_SIZE);
 
 	// perform Q
 	float * temp2 = new float[BLK_SIZE*BLK_SIZE];
