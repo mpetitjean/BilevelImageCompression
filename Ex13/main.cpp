@@ -1,8 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <cmath>
 
-#define LENGTH_1D	256
+#define LENGTH_1D		256
 
 void load(std::string filename, float * buffer)
 {
@@ -54,8 +53,9 @@ int encode_rle(float * bufferIn, int * encoded)
 			}
 		}
 	}
+	encoded[num] = runs;
 
-	return num;
+	return num+1;
 }
 
 void decode_rle(int * encoded, float * decoded, int num)
@@ -78,26 +78,56 @@ void decode_rle(int * encoded, float * decoded, int num)
 	}
 }
 
-float * normalizeToPdf(float * occurences)
+std::string golomb(int input)
 {
-	float * normalized = new float[LENGTH_1D*LENGTH_1D];
-	float sum = 0.0;
-	// find sum of elements in occurences image
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	int digits;
+	input ++;
+	int in = input;
+
+	// find number of bits
+	for (digits = 0; in > 0; in >>= 1)
 	{
-		sum += occurences[i];
-	}
-	// normalize each element
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
-	{
-		normalized[i] = occurences[i]/sum;
+		digits ++;
 	}
 
-	return normalized;
-}	
+	// Binary representation
+	std::string bin;
+	for (int i = digits-1; i >= 0; i--)
+	{
+		bin += std::to_string((input >> i) & 1);
+	}
+
+	return std::string(digits-1, '0') + bin;
+}
+
+void toGolomb(int * encoded, std::string filename, int size)
+{
+	std::ofstream outfile;
+	outfile.open(filename, std::ios::out);
+
+	for (int i = 0; i < size; ++i)
+	{
+		outfile << golomb(encoded[i]) << std::endl;
+	}
+
+	outfile.close();
+}
+
+int * fromGolomb(std::string filename, int size)
+{
+	std::ofstream outfile;
+	outfile.open(filename, std::ios::out);
+
+	// Do the parsing here and call igolomb
+
+	outfile.close();
+}
 
 int main()
 {
+	std::string res = golomb(4);
+	std::cout << res << std::endl;
+
 	// Read bilevel image
 	float * earth = new float[LENGTH_1D*LENGTH_1D];
 	load("earth_binary_256x256.raw", earth);	
@@ -105,14 +135,10 @@ int main()
 	// Encode RLE
 	int * encoded = new int[LENGTH_1D*LENGTH_1D];
 	int size = encode_rle(earth, encoded);
-	std::cout << "\nThere were " << size << " runs." << std::endl;
-	
-	// decode RLE
-	float * decoded = new float[LENGTH_1D*LENGTH_1D];
-	decode_rle(encoded, decoded, size);
-	store(decoded, "earth_decoded.raw", LENGTH_1D);
 
-	delete decoded;
+	// Encode Exp-Golomb
+	toGolomb(encoded, "golombed.txt", size);
+	
 	delete earth;
 	delete encoded; 
 

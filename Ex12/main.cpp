@@ -54,8 +54,9 @@ int encode_rle(float * bufferIn, int * encoded)
 			}
 		}
 	}
+	encoded[num] = runs;
 
-	return num;
+	return num+1;
 }
 
 void decode_rle(int * encoded, float * decoded, int num)
@@ -78,23 +79,80 @@ void decode_rle(int * encoded, float * decoded, int num)
 	}
 }
 
-float * normalizeToPdf(float * occurences)
+void storeToCSV(int * arrayIn, std::string filename, int size)
 {
-	float * normalized = new float[LENGTH_1D*LENGTH_1D];
-	float sum = 0.0;
+	std::ofstream outfile;
+	outfile.open(filename, std::ios::out);
+
+	for (int i = 0; i < size; ++i)
+	{
+		outfile << std::to_string(arrayIn[i]) << std::endl;
+	}
+	outfile.close();
+}
+
+float * normalizeToPdf(int * occurences, int size)
+{
+	float * normalized = new float[size];
+	int sum = 0;
 	// find sum of elements in occurences image
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	for (int i = 0; i < size+1; ++i)
 	{
 		sum += occurences[i];
 	}
+
 	// normalize each element
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	for (int i = 0; i < size; ++i)
 	{
-		normalized[i] = occurences[i]/sum;
+		normalized[i] = ((float)occurences[i])/sum;
 	}
 
 	return normalized;
 }	
+
+int * findOccurences(int * encoded, int * size)
+{
+	// Find maximum of encoded
+	int max = 0; 
+	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		if (encoded[i] > max)
+		{
+			max = encoded[i];
+		}
+	}
+	* size = max;
+
+	// Create array and fill it
+	int * P = new int[max+1];
+	// fill P with zeros
+	for (int i = 0; i < max+1; ++i)
+	{
+		P[i] = 0;
+	}
+
+	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
+	{
+		P[encoded[i]] ++;
+
+	}
+	P[0] = 0;
+	return P;
+}
+
+float entropy(float * pdf, int size)
+{
+	float H = 0.0;
+	for (int i = 0; i < size; ++i)
+	{
+		if (pdf[i] != 0)
+		{
+			H -= pdf[i] * log2(pdf[i]);
+		}
+	}
+
+	return H;
+}
 
 int main()
 {
@@ -112,6 +170,18 @@ int main()
 	decode_rle(encoded, decoded, size);
 	store(decoded, "earth_decoded.raw", LENGTH_1D);
 
+	// Find number of occurences and normalize
+	int occ = 0;
+	int * P = findOccurences(encoded, &occ);
+	storeToCSV(P, "occurences.csv", occ);
+	float * pdf = normalizeToPdf(P, occ);
+
+	// Find entropy
+	float H = entropy(pdf, occ);
+	std::cout << "Entropy is " << H << " bits" << std::endl;
+
+	delete pdf;
+	delete P;
 	delete decoded;
 	delete earth;
 	delete encoded; 
