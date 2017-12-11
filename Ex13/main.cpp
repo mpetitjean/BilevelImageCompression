@@ -4,6 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <boost/dynamic_bitset.hpp>
 
 #define LENGTH_1D	256 
 
@@ -30,6 +31,47 @@ int load(std::string filename, std::vector<T>& image)
 		std::cout << "Cannot read " << filename << std::endl;
 	file.close();
 	return file.rdstate();
+}
+
+
+std::string golomb(uint value)
+{
+ 	std::string buffer;
+ 	++value;
+	to_string(boost::dynamic_bitset<> (2 * (31 - __builtin_clz(value)) + 1, value), buffer);
+	return buffer;
+}
+
+uint golomb(std::string value)
+{
+	return (uint)(std::stol(value, nullptr, 2) - 1);
+}
+
+std::vector<int> golomb(std::string filename, int size)
+{
+	std::vector<int> encoded;
+	encoded.reserve(size);
+	std::ifstream file (filename);
+	uint count = 0;
+	std::string str = "1";
+	if(file)
+	{
+		while(!file.eof())
+		{
+			++count;
+			if(file.get()=='1')
+			{
+				for (char c; str.size() != count && file.get(c); )
+    				str += c;
+    			encoded.push_back(golomb(str));
+    			str = "1";
+    			count = 0;
+			}
+		}
+	}
+	else
+		std::cout << "Cannot read " << filename << std::endl;
+	return encoded;
 }
 
 std::vector<int> encode_rle(std::vector<char> image)
@@ -61,7 +103,6 @@ std::vector<float> normalize(std::vector<float> P)
 
 std::vector<float> nbOccurences(std::vector<int> encoded)
 {
-	std::cout << *std::max_element(encoded.begin(), encoded.end()) << std::endl;
 	std::vector<float> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
 	for (int i : encoded)
 		occ[i]++;
@@ -84,19 +125,6 @@ std::vector<char> decode_rle(std::vector<int> image)
 	return output;
 }
 
-float entropy(std::vector<float> P)
-{
-	float sum = 0;
-	for (float i : P)
-	{
-		if (i !=0)
-			{
-				sum -= i * log2(i);
-			}
-	}
-	return sum;
-}
-
 int toCSV(std::string filename, std::vector<float> data)
 {
 	std::ofstream file (filename);
@@ -109,6 +137,23 @@ int toCSV(std::string filename, std::vector<float> data)
 	return file.rdstate();
 }
 
+template <typename T>
+std::vector<size_t> sort_indexes(const std::vector<T> &v) {
+
+  // initialize original index locations
+  std::vector<size_t> idx(v.size());
+  iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  sort(idx.begin(), idx.end(),
+       [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+
+  return idx;
+}
+
+
+
+
 int main()
 {
 	std::vector<float> imagefloat(256*256);
@@ -117,7 +162,18 @@ int main()
 	std::vector<int> encoded = encode_rle(image);
 	std::vector<float> P = nbOccurences(encoded);
 	std::vector<float> Pnorm = normalize(P);
-	float H = entropy(Pnorm);
 	toCSV("test.csv", P);
+	std::ofstream outfile;
+	outfile.open("test.raw");
+	for(auto value : encoded)
+	{
+		outfile << golomb(value);
+	}
+	outfile.close();
+	std::vector<int> encoded2 = golomb("test.raw", encoded.size());
+	// std::cout << "start" << std::endl;
+	// for (auto i: sort_indexes(P)) {
+ //  		std::cout << i << std::endl;
+	// }
 	return 0;
 }
