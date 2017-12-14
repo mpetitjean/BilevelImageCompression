@@ -138,17 +138,23 @@ int toCSV(std::string filename, std::vector<float> data)
 }
 
 template <typename T>
-std::vector<size_t> sort_indexes(const std::vector<T> &v) {
+std::vector<int> createLUT(const std::vector<T> &v) {
 
   // initialize original index locations
-  std::vector<size_t> idx(v.size());
+  std::vector<int> idx(v.size());
   iota(idx.begin(), idx.end(), 0);
 
   // sort indexes based on comparing values in v
   sort(idx.begin(), idx.end(),
-       [&v](size_t i1, size_t i2) {return v[i1] < v[i2];});
+       [&v](int i1, int i2) {return v[i1] > v[i2];});
 
-  return idx;
+	std::vector<int> LUT(v.size());
+
+	for (size_t i = 0; i <  v.size(); ++i)
+	{
+  		LUT[idx[i]] = i;
+	}
+  return LUT;
 }
 
 
@@ -171,9 +177,23 @@ int main()
 	}
 	outfile.close();
 	std::vector<int> encoded2 = golomb("test.raw", encoded.size());
-	// std::cout << "start" << std::endl;
-	// for (auto i: sort_indexes(P)) {
- //  		std::cout << i << std::endl;
-	// }
+	std::vector<int> LUT = createLUT(P);
+	
+	outfile.open("testttt.raw");
+	for(auto value : encoded)
+	{
+		outfile << golomb(LUT[value]);
+	}
+	outfile.close();
+	outfile.open("LUT.txt");
+	for(auto value : LUT)
+	{
+		outfile << value << std::endl;
+	}
+	outfile.close();
+	std::vector<int> encoded3 = golomb("testttt.raw", encoded.size());
+	std::transform(encoded3.begin(), encoded3.end(), encoded3.begin(),
+		[LUT](int value){return std::distance(LUT.begin(), std::find(LUT.begin(), LUT.end(), value));});
+	std::cout << (encoded3 == encoded && encoded2 == encoded) << std::endl;
 	return 0;
 }
