@@ -107,7 +107,7 @@ void toGolomb(int * encoded, std::string filename, int size)
 
 	for (int i = 0; i < size; ++i)
 	{
-		outfile << golomb(encoded[i]) << std::endl;
+		outfile << golomb(encoded[i]);
 	}
 
 	outfile.close();
@@ -115,12 +115,23 @@ void toGolomb(int * encoded, std::string filename, int size)
 
 int * fromGolomb(std::string filename, int size)
 {
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out);
+	std::ifstream infile;
+	infile.open(filename);
 
-	// Do the parsing here and call igolomb
-
-	outfile.close();
+	int count = 0;
+	if(infile.is_open())
+	{
+		while(!infile.eof())
+		{	
+			if(file.get() == '1')
+			{
+				
+			}
+		}	
+		infile.close();
+	}
+	else
+		std::cout << "Unable to open " << filename << std::endl;
 }
 
 int main()
@@ -138,6 +149,7 @@ int main()
 
 	// Encode Exp-Golomb
 	toGolomb(encoded, "golombed.txt", size);
+	fromGolomb("golombed.txt", size);
 	
 	delete earth;
 	delete encoded; 
