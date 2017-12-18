@@ -4,7 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
-#include <boost/dynamic_bitset.hpp>
+#include <bitset>
 
 #define LENGTH_1D	256 
 
@@ -118,41 +118,60 @@ std::vector<int> createLUT(const std::vector<T> &v)
 
 std::vector<char> shrinkColumnTo8bpp(std::vector<char> binaryImage)
 {
-	int side = binaryImage.size();
-	std::vector<char> shrinked(side/8);
+	int side = sqrt(binaryImage.size());
+	std::vector<char> shrinked(binaryImage.size()/8);
 	
-	for (int i = 0; i < (int) sqrt(side); ++i)
+	for (int i = 0; i < side; ++i)
 	{
-		for (int j = 0; j < (int) sqrt(side)/8; j += 8)
+		for (int j = 0; j < side; j += 8)
 		{
 			char res = 0;
 			for (int k = 0; k < 8; ++k)
-			{	
-				// if (i == 1 && j == 8)
-				// {
-				// 	std::cout << (j+k)*sqrt(side) + i << std::endl;
-				// }
-				res += (binaryImage[(j+k)*sqrt(side) + i] << (7-k));
+			{
+				res += (binaryImage[(j+k)*side + i] << (7-k));
 			}
-			shrinked[j*sqrt(side) + i] = res;
+			shrinked[j/8*side + i] = res;
 		}
 	}
 
 	return shrinked;
 }
 
+std::vector<char> ExpandColumnFrom8bpp(std::vector<char> shrinked)
+{
+	int side = sqrt(shrinked.size()*8);
+	std::vector<char> binaryImage(shrinked.size()*8);
+	std::bitset<8> res;
+	
+	for (int i = 0; i < side; ++i)
+	{
+		for (int j = 0; j < side/8; ++j)
+		{
+			res = shrinked[j*side + i];
+			for (int k = 0; k < 8; ++k)
+			{	
+				binaryImage[(j*8+k)*side + i] = res[7-k];
+			}
+			
+		}
+	}
+
+	return binaryImage;
+}
+
 
 int main()
 {
 	std::vector<float> imagefloat(256*256);
-	load("earth_binary_256x256.raw", imagefloat);
+	load("lena_binary_dithered_256x256.raw", imagefloat);
 	std::vector<char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
 
 	//1) Shrink image in column
 	std::vector<char> shrinked = shrinkColumnTo8bpp(image);
-	store("shrinked.raw", shrinked);
+	std::vector<char> result = ExpandColumnFrom8bpp(shrinked);
+	store("result.raw", result);
 
 
 	return 0;
