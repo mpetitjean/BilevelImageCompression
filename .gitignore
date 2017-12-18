@@ -15,7 +15,11 @@
 *.lo
 *.o
 *.obj
-
+*.raw
+!lena_256x256.raw
+!earth_binary_256x256.raw
+!lena_binary_dithered_256x256.raw
+*.jpeg
 # Precompiled Headers
 *.gch
 *.pch
