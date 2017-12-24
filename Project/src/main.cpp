@@ -4,6 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <map>
 #include <bitset>
 #include <set>
 #include <deque>
@@ -52,13 +53,6 @@ std::vector<int> encode_rle(std::vector<char> image)
 	}
 	output.push_back(sum);
 	return output;
-}
-
-std::vector<float> normalize(std::vector<float> P)
-{
-	float sum = std::accumulate(P.begin(), P.end(), 0.);
-	std::transform(P.begin(), P.end(), P.begin(), [sum](float val){return val/sum;});
-	return P;
 }
 
 std::vector<float> nbOccurences(std::vector<int> encoded)
@@ -233,21 +227,72 @@ std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
 		if (image[index] > 255)
 		{
 			result.push_back(image[index] - 256);
-			++index;
 		}
 		else
 		{
 			std::fill_n(back_inserter(result), image[index], 0);
 		}
+		++index;
 	}
 	return result;
 }
 
+std::vector<float> normalize(std::vector<float> P)
+{
+	float sum = std::accumulate(P.begin(), P.end(), 0.);
+	std::transform(P.begin(), P.end(), P.begin(), [sum](float val){return val/sum;});
+	return P;
+}
+
+std::map <unsigned int, float> nbOccurences(std::vector<unsigned int> encoded)
+{
+	std::map <unsigned int, float> occ;
+	std::set <unsigned int> values(begin(encoded), end(encoded));
+
+	// Fill map with encoded values
+	std::for_each(values.begin(), values.end(), [&occ, encoded](unsigned int val)
+		{occ[val] = std::count(encoded.begin(), encoded.end(), val);});
+
+	// normalize
+	float sum = std::accumulate(occ.begin(), occ.end(), 0., [](float sum, std::pair<unsigned int, float> p)
+		{return sum + p.second;});
+	
+	for (auto pair : occ)
+	{
+		occ[pair.first] /= sum;
+	}
+
+
+
+	return occ;
+}
+
+std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, float> occ)
+{
+	// One symbol ⟷ one pair [min, max)
+	std::map<unsigned int, std::pair<double, double>> result;
+	float high = 0.;
+	float low = 0.;
+
+	for (auto p : occ)
+	{
+		high += p.second;
+		result[p.first] = std::pair<double, double>(low, high);
+		low = high;
+	}
+
+	for (auto val : result)
+	{
+		std::cout << val.first << " : (" << val.second.first << ", " << val.second.second << ")" << std::endl;
+	}
+
+	return result;
+}	
 
 int main()
 {
 	std::vector<float> imagefloat(256*256);
-	load("lena_binary_dithered_256x256.raw", imagefloat);
+	load("earth_binary_256x256.raw", imagefloat);
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
@@ -265,6 +310,11 @@ int main()
 
 	std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
 	std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
+
+	std::vector<unsigned int> test = {1, 2, 3, 4, 3, 3, 1, 5};
+
+	std::map <unsigned int, float> dico = nbOccurences(test);
+	std::map<unsigned int, std::pair<double, double>> testmap = createIntervals(dico);
 
 	store("result.raw", result);
 
