@@ -5,9 +5,10 @@
 #include <numeric>
 #include <algorithm>
 #include <bitset>
+#include <set>
+#include <deque>
 
-#define LENGTH_1D	256 
-
+#define LENGTH_1D	256
 
 template <class T>
 int store(std::string filename, std::vector<T> image)
@@ -116,16 +117,16 @@ std::vector<int> createLUT(const std::vector<T> &v)
 	return LUT;
 }
 
-std::vector<char> shrinkColumnTo8bpp(std::vector<char> binaryImage)
+std::vector<unsigned char> shrinkColumnTo8bpp(std::vector<unsigned char> binaryImage)
 {
 	int side = sqrt(binaryImage.size());
-	std::vector<char> shrinked(binaryImage.size()/8);
+	std::vector<unsigned char> shrinked(binaryImage.size()/8);
 	
 	for (int i = 0; i < side; ++i)
 	{
 		for (int j = 0; j < side; j += 8)
 		{
-			char res = 0;
+			unsigned char res = 0;
 			for (int k = 0; k < 8; ++k)
 			{
 				res += (binaryImage[(j+k)*side + i] << (7-k));
@@ -137,10 +138,10 @@ std::vector<char> shrinkColumnTo8bpp(std::vector<char> binaryImage)
 	return shrinked;
 }
 
-std::vector<char> ExpandColumnFrom8bpp(std::vector<char> shrinked)
+std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrinked)
 {
 	int side = sqrt(shrinked.size()*8);
-	std::vector<char> binaryImage(shrinked.size()*8);
+	std::vector<unsigned char> binaryImage(shrinked.size()*8);
 	std::bitset<8> res;
 	
 	for (int i = 0; i < side; ++i)
@@ -159,18 +160,112 @@ std::vector<char> ExpandColumnFrom8bpp(std::vector<char> shrinked)
 	return binaryImage;
 }
 
+std::vector<unsigned char> M2F(std::vector<unsigned char> image, std::deque<unsigned char> dictionnary)
+{
+	std::vector<unsigned char> result;
+	result.reserve(image.size());
+	int index;
+	int temp;
+	for (auto num : image)
+	{
+		index = std::distance(begin(dictionnary), std::find(begin(dictionnary), end(dictionnary), num));
+		result.push_back(index);
+		temp = std::move(dictionnary[index]);
+		dictionnary.erase(begin(dictionnary) + index);
+		dictionnary.push_front(temp);
+	}
+	return result;
+}
+
+std::vector<unsigned char> iM2F(std::vector<unsigned char> image, std::deque<unsigned char> dictionnary)
+{
+	std::vector<unsigned char> result;
+	result.reserve(image.size());
+	int temp;
+	for (auto num : image)
+	{
+		result.push_back(dictionnary[num]);
+		temp = std::move(dictionnary[num]);
+		dictionnary.erase(begin(dictionnary) + num);
+		dictionnary.push_front(temp);
+	}
+	return result;
+}
+
+std::vector<unsigned int> TRE(std::vector<unsigned char> image)
+{
+	std::vector<unsigned int> result;
+	result.reserve(image.size());
+	unsigned int index = 0;
+	unsigned int count = 1;
+	while (index < image.size())
+	{
+		if (image[index])
+		{
+			result.push_back(image[index] + 256);
+			++index;
+		}
+		else
+		{
+			while (!image[index + count])
+			{
+				++count;
+			}
+			result.push_back(count);
+			if (count > 255)
+			{
+				std::cout << "Too many consecutive zeros!" << std::endl;
+			}
+			index += count;
+			count = 1;
+		}
+	}
+	return result;
+}
+
+std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
+{
+	std::vector<unsigned char> result;
+	result.reserve(image.size());
+	unsigned int index = 0;
+	while (index < image.size())
+	{
+		if (image[index] > 255)
+		{
+			result.push_back(image[index] - 256);
+			++index;
+		}
+		else
+		{
+			std::fill_n(back_inserter(result), image[index], 0);
+		}
+	}
+	return result;
+}
+
 
 int main()
 {
 	std::vector<float> imagefloat(256*256);
 	load("lena_binary_dithered_256x256.raw", imagefloat);
-	std::vector<char> image(imagefloat.begin(), imagefloat.end());
+	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
 
 	//1) Shrink image in column
-	std::vector<char> shrinked = shrinkColumnTo8bpp(image);
-	std::vector<char> result = ExpandColumnFrom8bpp(shrinked);
+	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
+
+	std::set<unsigned char> dictionnary_set(begin(shrinked), end(shrinked));
+	std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
+	
+	std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
+
+	std::vector<unsigned int> run_length = TRE(coeff);
+	std::vector<unsigned char> coeff2 = iTRE(run_length);
+
+	std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
+	std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
+
 	store("result.raw", result);
 
 
