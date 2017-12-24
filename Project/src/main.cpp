@@ -8,6 +8,7 @@
 #include <bitset>
 #include <set>
 #include <deque>
+#include <gmp.h>
 
 #define LENGTH_1D	256
 
@@ -271,47 +272,67 @@ std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsi
 	return result;
 }	
 
-double arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd)
+void arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd, mpf_t& outbuff)
 {
-	double high = 1., low = 0., range;
-
+	mpf_t high, low, range, temp;
+	mpf_init_set_d(high, 1.);
+	mpf_init_set_d(low, 0.);
+	mpf_init(temp);
 	for (auto value : TREd)
 	{
-		range = high - low;
+		mpf_sub(range, high, low);
 		std::cout << range << std::endl;
-		high = low + range*intervalsMap[value].second;
-		low = low + range*intervalsMap[value].first;
-	}
+		mpf_set_d(temp, intervalsMap[value].second);
+		mpf_mul(temp, temp, range);
+		mpf_add(high, low, temp);
+		// high = low + range*intervalsMap[value].second;
+		mpf_set_d(temp, intervalsMap[value].first);
+		mpf_mul(temp, temp, range);
+		mpf_add(low, low, temp);
 
-	return low+(high-low)/2;
+		// low = low + range*intervalsMap[value].first;
+	}
+	mpf_sub(temp, high, low);
+	mpf_div_ui(temp, temp ,2);
+	mpf_add(temp, temp, low);
+	mpf_set(outbuff, temp);
 }
 
-std::vector<unsigned int> arithmeticDecoder(double encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap)
+std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap)
 {
 	// IMPORTANT: '0' is EOF character
 	// http://marknelson.us/2014/10/19/data-compression-with-arithmetic-coding/
 
-	double high = 1., low = 0., range;
-	double temp;
+	mpf_t high, low, range, temp;
+	mpf_init_set_d(high, 1.);
+	mpf_init_set_d(low, 0.);
+	mpf_init(temp);
 	std::vector<unsigned int> decoded;
 
 	do
 	{
-		range = high-low;
-		temp = (encoded - low)/range;
+		mpf_sub(range, high, low);
+		mpf_sub(temp, encoded, low);
+		mpf_div(temp, temp, range);
+		// temp = (encoded - low)/range;
 
 		for (auto val : intervalsMap)
 		{
-			if (temp >= val.second.first && temp < val.second.second)
+			if (mpf_cmp_d(temp, val.second.first) >= 0 && mpf_cmp_d(temp, val.second.second) < 0) //if (temp >= val.second.first && temp < val.second.second)
 			{
 				decoded.push_back(val.first);
 				std::cout << val.first << std::endl;
 				break;
 			}
 		}
-
-		high = low + range*intervalsMap[decoded.back()].second;
-		low = low + range*intervalsMap[decoded.back()].first;
+		mpf_set_d(temp, intervalsMap[decoded.back()].second);
+		mpf_mul(temp, temp, range);
+		mpf_add(high, low, temp);
+		// high = low + range*intervalsMap[decoded.back()].second;
+		mpf_set_d(temp, intervalsMap[decoded.back()].first);
+		mpf_mul(temp, temp, range);
+		mpf_add(low, low, temp);
+		// low = low + range*intervalsMap[decoded.back()].first;
 
 	}
 	while(decoded.back() != 0);
@@ -345,11 +366,11 @@ int main()
 	std::map<unsigned int, double> dico = nbOccurences(run_length);
 	run_length.push_back(0);
 	std::map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
-
-	double res = arithmeticEncoder(valmap, run_length);
+	mpf_t res;
+	arithmeticEncoder(valmap, run_length, res);
 	std::cout << "Encoded image = " << res << std::endl;
 
-	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap);
+	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap); 		
 	rtest.pop_back();
 
 	std::vector<unsigned char> coeff2 = iTRE(rtest);
