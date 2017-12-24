@@ -55,14 +55,6 @@ std::vector<int> encode_rle(std::vector<char> image)
 	return output;
 }
 
-std::vector<float> nbOccurences(std::vector<int> encoded)
-{
-	std::vector<float> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
-	for (int i : encoded)
-		occ[i]++;
-	return occ;
-}
-
 std::vector<char> decode_rle(std::vector<int> image)
 {
 	char bit = 0;
@@ -237,16 +229,9 @@ std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
 	return result;
 }
 
-std::vector<float> normalize(std::vector<float> P)
+std::map <unsigned int, double> nbOccurences(std::vector<unsigned int> encoded)
 {
-	float sum = std::accumulate(P.begin(), P.end(), 0.);
-	std::transform(P.begin(), P.end(), P.begin(), [sum](float val){return val/sum;});
-	return P;
-}
-
-std::map <unsigned int, float> nbOccurences(std::vector<unsigned int> encoded)
-{
-	std::map <unsigned int, float> occ;
+	std::map <unsigned int, double> occ;
 	std::set <unsigned int> values(begin(encoded), end(encoded));
 
 	// Fill map with encoded values
@@ -254,25 +239,22 @@ std::map <unsigned int, float> nbOccurences(std::vector<unsigned int> encoded)
 		{occ[val] = std::count(encoded.begin(), encoded.end(), val);});
 
 	// normalize
-	float sum = std::accumulate(occ.begin(), occ.end(), 0., [](float sum, std::pair<unsigned int, float> p)
+	double sum = std::accumulate(occ.begin(), occ.end(), 0., [](double sum, std::pair<unsigned int, double> p)
 		{return sum + p.second;});
 	
 	for (auto pair : occ)
 	{
 		occ[pair.first] /= sum;
 	}
-
-
-
 	return occ;
 }
 
-std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, float> occ)
+std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, double> occ)
 {
 	// One symbol ⟷ one pair [min, max)
 	std::map<unsigned int, std::pair<double, double>> result;
-	float high = 0.;
-	float low = 0.;
+	double high = 0.;
+	double low = 0.;
 
 	for (auto p : occ)
 	{
@@ -281,13 +263,62 @@ std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsi
 		low = high;
 	}
 
-	for (auto val : result)
-	{
-		std::cout << val.first << " : (" << val.second.first << ", " << val.second.second << ")" << std::endl;
-	}
+	// for (auto val : result)
+	// {
+	// 	std::cout << val.first << " : (" << val.second.first << ", " << val.second.second << ")" << std::endl;
+	// }
 
 	return result;
 }	
+
+double arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd)
+{
+	double high = 1., low = 0., range;
+
+	for (auto value : TREd)
+	{
+		range = high - low;
+		std::cout << range << std::endl;
+		high = low + range*intervalsMap[value].second;
+		low = low + range*intervalsMap[value].first;
+	}
+
+	return low+(high-low)/2;
+}
+
+std::vector<unsigned int> arithmeticDecoder(double encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap)
+{
+	// IMPORTANT: '0' is EOF character
+	// http://marknelson.us/2014/10/19/data-compression-with-arithmetic-coding/
+
+	double high = 1., low = 0., range;
+	double temp;
+	std::vector<unsigned int> decoded;
+
+	do
+	{
+		range = high-low;
+		temp = (encoded - low)/range;
+
+		for (auto val : intervalsMap)
+		{
+			if (temp >= val.second.first && temp < val.second.second)
+			{
+				decoded.push_back(val.first);
+				std::cout << val.first << std::endl;
+				break;
+			}
+		}
+
+		high = low + range*intervalsMap[decoded.back()].second;
+		low = low + range*intervalsMap[decoded.back()].first;
+
+	}
+	while(decoded.back() != 0);
+
+	return decoded;
+}
+
 
 int main()
 {
@@ -296,7 +327,8 @@ int main()
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
-
+	__float128 a = 1.0;
+	
 	//1) Shrink image in column
 	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
 
@@ -306,15 +338,31 @@ int main()
 	std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
 
 	std::vector<unsigned int> run_length = TRE(coeff);
-	std::vector<unsigned char> coeff2 = iTRE(run_length);
+
+	// for (auto val : run_length)
+	// 	std::cout << val << std::endl;
+
+	std::map<unsigned int, double> dico = nbOccurences(run_length);
+	run_length.push_back(0);
+	std::map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
+
+	double res = arithmeticEncoder(valmap, run_length);
+	std::cout << "Encoded image = " << res << std::endl;
+
+	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap);
+	rtest.pop_back();
+
+	std::vector<unsigned char> coeff2 = iTRE(rtest);
 
 	std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
 	std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
 
-	std::vector<unsigned int> test = {1, 2, 3, 4, 3, 3, 1, 5};
+	// std::vector<unsigned int> test = {1, 2, 3, 4, 3, 3, 1, 5, 0};
 
-	std::map <unsigned int, float> dico = nbOccurences(test);
-	std::map<unsigned int, std::pair<double, double>> testmap = createIntervals(dico);
+	
+
+	// for (auto val : rtest)
+	// 	std::cout << val << std::endl;
 
 	store("result.raw", result);
 
