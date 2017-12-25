@@ -8,6 +8,7 @@
 #include <bitset>
 #include <set>
 #include <deque>
+#include <stdio.h>
 #include <gmp.h>
 
 #define LENGTH_1D	256
@@ -274,31 +275,32 @@ std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsi
 
 void arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd, mpf_t& outbuff)
 {
-	mpf_t high, low, range, temp;
+	mpf_t high, low, range;
 	mpf_init_set_d(high, 1.);
 	mpf_init_set_d(low, 0.);
-	mpf_init(temp);
+	mpf_init(range);
+	// mpf_init(temp);
 	for (auto value : TREd)
 	{
 		mpf_sub(range, high, low);
 		std::cout << range << std::endl;
-		mpf_set_d(temp, intervalsMap[value].second);
-		mpf_mul(temp, temp, range);
-		mpf_add(high, low, temp);
+		mpf_set_d(outbuff, intervalsMap[value].second);
+		mpf_mul(outbuff, outbuff, range);
+		mpf_add(high, low, outbuff);
 		// high = low + range*intervalsMap[value].second;
-		mpf_set_d(temp, intervalsMap[value].first);
-		mpf_mul(temp, temp, range);
-		mpf_add(low, low, temp);
-
+		mpf_set_d(outbuff, intervalsMap[value].first);
+		mpf_mul(outbuff, outbuff, range);
+		mpf_add(low, low, outbuff);
 		// low = low + range*intervalsMap[value].first;
 	}
-	mpf_sub(temp, high, low);
-	mpf_div_ui(temp, temp ,2);
-	mpf_add(temp, temp, low);
-	mpf_set(outbuff, temp);
+	mpf_sub(outbuff, high, low);
+	mpf_div_ui(outbuff, outbuff ,2);
+	mpf_add(outbuff, outbuff, low);
+	mpf_clears(high, low, range, NULL);
+	// mpf_set(outbuff, temp);
 }
 
-std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap)
+std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap, size_t size)
 {
 	// IMPORTANT: '0' is EOF character
 	// http://marknelson.us/2014/10/19/data-compression-with-arithmetic-coding/
@@ -306,7 +308,7 @@ std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int
 	mpf_t high, low, range, temp;
 	mpf_init_set_d(high, 1.);
 	mpf_init_set_d(low, 0.);
-	mpf_init(temp);
+	mpf_inits(range, temp, NULL);
 	std::vector<unsigned int> decoded;
 
 	do
@@ -321,7 +323,7 @@ std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int
 			if (mpf_cmp_d(temp, val.second.first) >= 0 && mpf_cmp_d(temp, val.second.second) < 0) //if (temp >= val.second.first && temp < val.second.second)
 			{
 				decoded.push_back(val.first);
-				std::cout << val.first << std::endl;
+				// std::cout << val.first << std::endl;
 				break;
 			}
 		}
@@ -333,9 +335,11 @@ std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int
 		mpf_mul(temp, temp, range);
 		mpf_add(low, low, temp);
 		// low = low + range*intervalsMap[decoded.back()].first;
+		// std::cout << "left: " << decoded.size() << std::endl;
 
 	}
 	while(decoded.back() != 0);
+	mpf_clears(high, low, range, temp, NULL);
 
 	return decoded;
 }
@@ -348,8 +352,7 @@ int main()
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
-	__float128 a = 1.0;
-	
+	mpf_set_default_prec(25000);
 	//1) Shrink image in column
 	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
 
@@ -359,27 +362,39 @@ int main()
 	std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
 
 	std::vector<unsigned int> run_length = TRE(coeff);
-
+	std::cout << run_length.size() << std::endl;
 	// for (auto val : run_length)
 	// 	std::cout << val << std::endl;
-
-	std::map<unsigned int, double> dico = nbOccurences(run_length);
+	// std::vector<unsigned int> test = {1, 2, 3, 4, 3, 3, 1, 5, 0};
 	run_length.push_back(0);
+	std::map<unsigned int, double> dico = nbOccurences(run_length);
 	std::map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
+	std::cout << valmap.size() << std::endl;
 	mpf_t res;
+	mpf_init(res);
 	arithmeticEncoder(valmap, run_length, res);
 	std::cout << "Encoded image = " << res << std::endl;
+	FILE* outfile;
+	outfile = fopen("compressed.raw","w");
+	mpf_out_str(outfile, 2, 0, res);
+	fclose(outfile);
 
-	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap); 		
+	// mpf_out_str()
+	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap, run_length.size()); 		
+	mpf_clear(res);
 	rtest.pop_back();
+	std::cout << "Decoded image = ";
+	for(auto i : rtest)
+		std::cout << i << ", ";
+	std::cout << std::endl;
+	
 
 	std::vector<unsigned char> coeff2 = iTRE(rtest);
 
 	std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
 	std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
 
-	// std::vector<unsigned int> test = {1, 2, 3, 4, 3, 3, 1, 5, 0};
-
+	
 	
 
 	// for (auto val : rtest)
