@@ -20,6 +20,17 @@
 \usepackage{tikz}
 \usepackage{caption}
 \usepackage{blindtext}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{units}
+\usepackage{standalone}
+\usepackage{tikzscale}
+\makeatletter
+\pgfplotsset{
+	unit code/.code 2 args=
+	\begingroup
+	\protected@edef\x{\endgroup\si{#2}}\x
+}
 %\usepackage{charter}
 \renewcommand{\baselinestretch}{1.1} 
 \setlength{\parindent}{0em}
@@ -68,7 +79,10 @@
 	
 \end{titlepage}
 
-\input{sections/intro.tex}
+\input{sections/intro}
+\input{sections/description}
+\input{sections/performance}
+\input{sections/ccl}
 
 
 \end{document}
