@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 -Wall -Wextra -pedantic
+CFLAGS = -Wall -Wextra -pedantic -std=c++14
 
 SUFFIXES = .cpp .o
 .SUFFIXES: $(SUFFIXES) .
