@@ -1,0 +1,9 @@
+\begin{tikzpicture}[>=latex]
+\draw[->](0, 0) -- ++ (0, 1.1) node[above left]{Display color};
+\draw (0,0) -- (-0.02,0) node[left]{black};
+\draw (0,1) --++ (-0.02,0) node[left]{white};
+\draw[->](0, 0) -- ++ (1.5, 0)node[below right]{Pixel value};
+\draw[thick](0, 0) -- ++ (0.5, 0) -- ++ (0.5, 1) -- ++ (0.5, 0);
+\draw[|<->|] (.5,-0.1) --  (1,-0.1) node[midway,below] {window};
+\draw[dashed] (.75,0) --++  (0,1) node[above]{level};
+\end{tikzpicture}%

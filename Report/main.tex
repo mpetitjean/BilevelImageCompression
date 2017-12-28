@@ -1,0 +1,113 @@
+\documentclass[12pt,english]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[hidelinks]{hyperref}
+\usepackage{setspace}
+\usepackage{titlesec}
+%\titleformat{\section}
+%{\normalfont\Large\bfseries}{Exercise~\thesection}{1em}{}
+\renewcommand*{\thesection}{Exercice~\arabic{section}}
+\usepackage{siunitx,textcomp}
+\geometry{
+	a4paper,
+	left=25mm,
+	right=25mm,
+	top=25mm,
+	bottom=25mm,
+}
+\usepackage{babel}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{units}
+\usepackage{standalone}
+\usepackage{tikzscale}
+\makeatletter
+\pgfplotsset{
+	unit code/.code 2 args=
+	\begingroup
+	\protected@edef\x{\endgroup\si{#2}}\x
+}
+\makeatother
+\usepackage[final]{microtype}
+\begin{document}
+	
+	\begin{titlepage}
+		{\setstretch{1.0}
+			
+			\includegraphics[width=\textwidth]{img/Logos.pdf} \hspace{4.5cm}
+			
+			\vspace{1 cm}
+			\large
+			
+			\begin{tabular}{lr}
+				\begin{minipage}[t]{0.5\textwidth}
+					{\small\textsc{Brussels Faculty of Enginering} \\[1ex]
+						Université Libre de Bruxelles\\[1ex]
+						Vrije Universiteit van Brussel\\[1ex]}
+				\end{minipage} & \begin{minipage}[t]{0.45\textwidth}
+					\begin{flushright}
+						{\small Academic Year 2017-2018}
+					\end{flushright}
+				\end{minipage}
+			\end{tabular}
+			
+			\vspace{\stretch{2}}
+			\begin{center}
+				\Large 
+				\textbf{Labs Report}\\
+				\vspace{3 cm}
+				\large
+				Cédric Hannotier\\ 
+			\end{center}
+			
+			
+			\vspace{\stretch{2}}
+			
+			\begin{minipage}[t]{\textwidth}
+				\normalsize \textbf{INFO-Y093}: Image and video technology\\[1.5ex]
+			\end{minipage}
+		}
+		
+	\end{titlepage}
+
+\tableofcontents\newpage
+
+\section{}
+\begin{figure}
+	\includegraphics[width=.8\textwidth]{tikz/windowlevel}
+	\caption{Window/Level Adjustement}
+\end{figure}
+
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+
+\section{}
+	
+\end{document}
