@@ -1,259 +1,215 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <boost/dynamic_bitset.hpp>
 
-#define LENGTH_1D		256
+#define LENGTH_1D	256 
 
-void load(std::string filename, float * buffer)
+
+template <class T>
+int store(std::string filename, std::vector<T> image)
 {
-	std::ifstream is (filename, std::ifstream::binary);
-	
-	if(is)
+	std::ofstream file (filename, std::ios::binary);
+	if (file)
+		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(T));
+	else
+		std::cout << "Cannot write into " << filename << std::endl;
+	file.close();
+	return file.rdstate();
+}
+
+template <class T>
+int load(std::string filename, std::vector<T>& image)
+{	
+	std::ifstream file (filename, std::ios::binary);
+	if (file)
+		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(T));
+	else 
+		std::cout << "Cannot read " << filename << std::endl;
+	file.close();
+	return file.rdstate();
+}
+
+
+std::string golomb(uint value)
+{
+ 	std::string buffer;
+ 	++value;
+	to_string(boost::dynamic_bitset<> (2 * (31 - __builtin_clz(value)) + 1, value), buffer);
+	return buffer;
+}
+
+uint igolomb(std::string value)
+{
+	return (uint)(std::stol(value, nullptr, 2) - 1);
+}
+
+std::vector<int> fromGolomb(std::string filename, int size, std::vector<int> LUT)
+{
+	std::vector<int> encoded;
+	encoded.reserve(size);
+	std::ifstream file (filename);
+	uint count = 0;
+	std::string str = "1";
+	if(file)
 	{
-		is.read(reinterpret_cast<char*> (buffer), LENGTH_1D*LENGTH_1D*sizeof(float));
-    	is.close();	
+		while(!file.eof())
+		{
+			++count;
+			if(file.get()=='1')
+			{
+				for (char c; str.size() != count && file.get(c); )
+    				str += c;
+    			encoded.push_back(igolomb(str));
+    			str = "1";
+    			count = 0;
+			}
+		}
 	}
 	else
-	{
-		std::cout << "Error opening file.\n";
-	}    
+		std::cout << "Cannot read " << filename << std::endl;
+
+	// Mapping thanks to LUT
+	std::transform(encoded.begin(), encoded.end(), encoded.begin(),
+		[LUT](int value){return std::distance(LUT.begin(), std::find(LUT.begin(), LUT.end(), value));});
+
+	return encoded;
 }
 
-void store(float* arrayIn, std::string filename, int size)
+std::vector<int> encode_rle(std::vector<char> image)
 {
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out | std::ios::binary);
-
-	if (outfile.is_open()) 
-	{
-		outfile.write(reinterpret_cast<const char*>(arrayIn), size*size*sizeof(float));
-	}
-	outfile.close();
-}
-
-int encode_rle(float * bufferIn, int * encoded)
-{
-	int runs = 0;
-	int num = 0;
-	float previous = bufferIn[0];
-
-	for (int i = 0; i < LENGTH_1D; ++i)
-	{
-		for (int j = 0; j < LENGTH_1D; ++j)
-		{
-			if (bufferIn[j + i*LENGTH_1D] != previous)
-			{
-				previous = bufferIn[j + i*LENGTH_1D];
-				encoded[num] = runs;
-				runs = 1;
-				num ++;
-			}
-			else
-			{
-				runs ++;
-			}
-		}
-	}
-	encoded[num] = runs;
-
-	return num+1;
-}
-
-void decode_rle(int * encoded, float * decoded, int num)
-{
-	int run;
-	float val = 0.0;
-	int offset = 0;
-
-	for (int i = 0; i < num; ++i)
-	{
-		run = encoded[i];
-
-		for (int j = 0; j < run; ++j)
-		{
-			decoded[j+offset] = val; 
-		}
-
-		offset += run;
-		val = !val;
-	}
-}
-
-void storeToCSV(int * arrayIn, std::string filename, int size)
-{
-	std::ofstream outfile;
-	outfile.open(filename, std::ios::out);
-
-	for (int i = 0; i < size; ++i)
-	{
-		outfile << std::to_string(arrayIn[i]) << std::endl;
-	}
-	outfile.close();
-}
-
-float * normalizeToPdf(int * occurences, int size)
-{
-	float * normalized = new float[size];
 	int sum = 0;
-	// find sum of elements in occurences image
-	for (int i = 0; i < size+1; ++i)
+	char bit = 0;
+	std::vector<int> output;
+	output.reserve(image.size());
+	for(unsigned int i=0; i < image.size(); ++i)
 	{
-		sum += occurences[i];
-	}
-
-	// normalize each element
-	for (int i = 0; i < size; ++i)
-	{
-		normalized[i] = ((float)occurences[i])/sum;
-	}
-
-	return normalized;
-}	
-
-int * findOccurences(int * encoded, int * size)
-{
-	// Find maximum of encoded
-	int max = 0; 
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
-	{
-		if (encoded[i] > max)
+		if (image[i] != bit)
 		{
-			max = encoded[i];
+			output.push_back(sum);
+			sum = 0;
+			bit = !bit;
 		}
+		++sum;
 	}
-	* size = max;
+	output.push_back(sum);
+	return output;
+}
 
-	// Create array and fill it
-	int * P = new int[max+1];
-	// fill P with zeros
-	for (int i = 0; i < max+1; ++i)
-	{
-		P[i] = 0;
-	}
-
-	for (int i = 0; i < LENGTH_1D*LENGTH_1D; ++i)
-	{
-		P[encoded[i]] ++;
-
-	}
-	P[0] = 0;
+std::vector<float> normalize(std::vector<float> P)
+{
+	float sum = std::accumulate(P.begin(), P.end(), 0.);
+	std::transform(P.begin(), P.end(), P.begin(), [sum](float val){return val/sum;});
 	return P;
 }
 
-float entropy(float * pdf, int size)
+std::vector<float> nbOccurences(std::vector<int> encoded)
 {
-	float H = 0.0;
-	for (int i = 0; i < size; ++i)
+	std::vector<float> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
+	for (int i : encoded)
+		occ[i]++;
+	return occ;
+}
+
+std::vector<char> decode_rle(std::vector<int> image)
+{
+	char bit = 0;
+	std::vector<char> output;
+	output.reserve(image.capacity());
+	for (int i : image)
 	{
-		if (pdf[i] != 0)
+		for( ;i > 0; --i)
 		{
-			H -= pdf[i] * log2(pdf[i]);
+			output.push_back(bit);
 		}
+		bit = !bit;
 	}
-
-	return H;
+	return output;
 }
 
-
-std::string golomb(int input)
+int toCSV(std::string filename, std::vector<float> data)
 {
-	int digits;
-	input ++;
-	int in = input;
-
-	// find number of bits
-	for (digits = 0; in > 0; in >>= 1)
-	{
-		digits ++;
-	}
-
-	// Binary representation
-	std::string bin;
-	for (int i = digits-1; i >= 0; i--)
-	{
-		bin += std::to_string((input >> i) & 1);
-	}
-
-	return std::string(digits-1, '0') + bin;
+	std::ofstream file (filename);
+	if (file)
+		for (float i : data)
+				file << std::to_string(i)<< std::endl;
+	else
+		std::cout << "Cannot write into " << filename << std::endl;
+	file.close();
+	return file.rdstate();
 }
 
-void toGolomb(int * encoded, std::string filename, int size)
-{
+template <typename T>
+std::vector<int> createLUT(const std::vector<T> &v) {
+
+	// initialize original index locations
+	std::vector<int> idx(v.size());
+	iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	sort(idx.begin(), idx.end(),
+	   [&v](int i1, int i2) {return v[i1] > v[i2];});
+
+	std::vector<int> LUT(v.size());
+
+	// fill LUT
+	for (size_t i = 0; i <  v.size(); ++i)
+	{
+			LUT[idx[i]] = i;
+	}
+
+	return LUT;
+}
+
+void toGolomb(std::vector<int> runs, std::vector<int> LUT)
+{	
 	std::ofstream outfile;
-	outfile.open(filename, std::ios::out);
-
-	for (int i = 0; i < size; ++i)
+	outfile.open("golombed.txt");
+	for(auto value : runs)
 	{
-		outfile << golomb(encoded[i]);
+		outfile << golomb(LUT[value]);
 	}
-
 	outfile.close();
 }
 
-int * createLUT(int * occurences)
-{
-	
-}
-
-int * fromGolomb(std::string filename, int size)
-{
-	std::ifstream infile;
-	infile.open(filename);
-
-	int count = 0;
-	if(infile.is_open())
-	{
-		while(!infile.eof())
-		{	
-			if(infile.get() == '1')
-			{
-				
-			}
-		}	
-		infile.close();
-	}
-	else
-		std::cout << "Unable to open " << filename << std::endl;
-}
-
 int main()
-{
-	std::string res = golomb(4);
-	std::cout << res << std::endl;
-
-	// Read bilevel image
-	float * earth = new float[LENGTH_1D*LENGTH_1D];
-	load("earth_binary_256x256.raw", earth);	
+{	
+	// Read image
+	std::vector<float> imagefloat(256*256);
+	load("earth_binary_256x256.raw", imagefloat);
+	std::vector<char> image(imagefloat.begin(), imagefloat.end());
 
 	// Encode RLE
-	int * encoded = new int[LENGTH_1D*LENGTH_1D];
-	int size = encode_rle(earth, encoded);
-	std::cout << "\nThere were " << size << " runs." << std::endl;
+	std::vector<int> encoded = encode_rle(image);
 	
-	// decode RLE
-	float * decoded = new float[LENGTH_1D*LENGTH_1D];
-	decode_rle(encoded, decoded, size);
-	store(decoded, "earth_decoded.raw", LENGTH_1D);
+	// Get pdf
+	std::vector<float> P = nbOccurences(encoded);
+	std::vector<float> Pnorm = normalize(P);
+	
+	// Create LUT and Golomb according to it
+	std::vector<int> LUT = createLUT(P);
+	toGolomb(encoded, LUT);
 
-	// Find number of occurences and normalize
-	int occ = 0;
-	int * P = findOccurences(encoded, &occ);
-	storeToCSV(P, "occurences.csv", occ);
-	float * pdf = normalizeToPdf(P, occ);
+	// Save LUT
+	std::ofstream outfile;
+	outfile.open("LUT.txt");
+	for(auto value : LUT)
+	{
+		outfile << value << std::endl;
+	}
+	outfile.close();
 
-	// Find entropy
-	float H = entropy(pdf, occ);
-	std::cout << "Entropy is " << H << " bits/run" << std::endl;
+	// Decode Golomb with LUT then run length
+	std::vector<int> Gdecoded = fromGolomb("golombed.txt", encoded.size(), LUT);
+	std::vector<char> decoded = decode_rle(Gdecoded);
+	store("decoded.raw", decoded);
 
-	// Encode Exp-Golomb
-	//toGolomb(encoded, "golombed.txt", size);
-	//fromGolomb("golombed.txt", size);
-
-	delete pdf;
-	delete P;
-	delete decoded;
-	delete earth;
-	delete encoded; 
+	if(decoded == image){
+		std::cout << "Decompress operation done well." << std::endl;
+	}
 
 	return 0;
 }
