@@ -39,6 +39,13 @@ int load(std::string filename, std::vector<T>& image)
 
 std::vector<int> encode_rle(std::vector<char> image)
 {
+	/**
+    Encodes the content of a bilevel vector into its RLE equivalent.
+    Assumes 0 as initial value.
+
+    @param vector only containing 1's or 0's
+    @return a vector of the length of each run
+	*/
 	int sum = 0;
 	char bit = 0;
 	std::vector<int> output;
@@ -58,7 +65,13 @@ std::vector<int> encode_rle(std::vector<char> image)
 }
 
 std::vector<char> decode_rle(std::vector<int> image)
-{
+{	
+	/**
+    Decodes back the output of the encode_rle function
+
+    @param vector of run lengths
+    @return a binary image
+	*/
 	char bit = 0;
 	std::vector<char> output;
 	output.reserve(image.capacity());
@@ -87,7 +100,17 @@ int toCSV(std::string filename, std::vector<float> data)
 
 template <typename T>
 std::vector<int> createLUT(const std::vector<T> &v)
-{
+{	
+	/**
+    Creates a LUT for entropy coding, its purpose being to map short
+    codewords to probable symbols
+
+    @param vector containing the number of occurences of each run length
+    @return vector of which the values indicate to what symbol its index is
+    		mapped. Example:
+    		vector {2,0,1,3,4} means that the mapping is 0-1,1-0,2-1,3-3,4-4
+	*/
+
 	// initialize original index locations
 	std::vector<int> idx(v.size());
 	iota(idx.begin(), idx.end(), 0);
@@ -98,6 +121,7 @@ std::vector<int> createLUT(const std::vector<T> &v)
 
 	std::vector<int> LUT(v.size());
 
+	// Fill LUT
 	for (size_t i = 0; i <  v.size(); ++i)
 	{
 			LUT[idx[i]] = i;
@@ -106,7 +130,13 @@ std::vector<int> createLUT(const std::vector<T> &v)
 }
 
 std::vector<unsigned char> shrinkColumnTo8bpp(std::vector<unsigned char> binaryImage)
-{
+{	
+	/**
+    Shrinks an image of dimension MxN to a (M/8)xN by grouping 8 bits per 8 bits in column.
+
+    @param vector only containing 1's or 0's
+    @return a smaller vector of 8-bit values corresponding to a column-wise shrink
+	*/
 	int side = sqrt(binaryImage.size());
 	std::vector<unsigned char> shrinked(binaryImage.size()/8);
 	
@@ -127,7 +157,14 @@ std::vector<unsigned char> shrinkColumnTo8bpp(std::vector<unsigned char> binaryI
 }
 
 std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrinked)
-{
+{	
+	/**
+    Performs the inverse operation as the shrinkColumnTo8bpp function.
+    (M/8)xN to MxN
+
+    @param vector of 8-bit values
+    @return vector only containing 1's or 0's
+	*/
 	int side = sqrt(shrinked.size()*8);
 	std::vector<unsigned char> binaryImage(shrinked.size()*8);
 	std::bitset<8> res;
@@ -149,7 +186,15 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 }
 
 std::vector<unsigned char> M2F(std::vector<unsigned char> image, std::deque<unsigned char> dictionnary)
-{
+{	
+	/**
+    Performs the Move-To-Front transform on a vector 'image' while updating 'dictionnary'.
+    A deque is used to allow fast insertions
+
+    @param 	image: input image
+			dictionnary: a deque acting as the dictionnary for the MTF
+    @return a vector being the result of the MTF
+	*/
 	std::vector<unsigned char> result;
 	result.reserve(image.size());
 	int index;
@@ -167,6 +212,14 @@ std::vector<unsigned char> M2F(std::vector<unsigned char> image, std::deque<unsi
 
 std::vector<unsigned char> iM2F(std::vector<unsigned char> image, std::deque<unsigned char> dictionnary)
 {
+	/**
+    Performs the inverse Move-To-Front transform on a vector 'image' while updating 'dictionnary'.
+    A deque is used to allow fast insertions
+
+    @param 	image: input transformed image
+			dictionnary: a deque acting as the dictionnary for the iMTF
+    @return a vector being the result of the iMTF
+	*/
 	std::vector<unsigned char> result;
 	result.reserve(image.size());
 	int temp;
@@ -182,6 +235,13 @@ std::vector<unsigned char> iM2F(std::vector<unsigned char> image, std::deque<uns
 
 std::vector<unsigned int> TRE(std::vector<unsigned char> image)
 {
+	/**
+    Apply a Two-Role-Encoder on a vector 'image'. The number of consecutive zeros 
+    must be smaller than 256.
+
+    @param 	input image
+    @return a vector begin the result of the TRE
+	*/
 	std::vector<unsigned int> result;
 	result.reserve(image.size());
 	unsigned int index = 0;
@@ -213,6 +273,12 @@ std::vector<unsigned int> TRE(std::vector<unsigned char> image)
 
 std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
 {
+	/**
+    Apply a Two-Role-Decoder on a vector 'image', inverse operation of TRE
+
+    @param 	input TRE'd image
+    @return a vector begin the result of the iTRE
+	*/
 	std::vector<unsigned char> result;
 	result.reserve(image.size());
 	unsigned int index = 0;
@@ -233,6 +299,13 @@ std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
 
 std::map <unsigned int, double> nbOccurences(std::vector<unsigned int> encoded)
 {
+	/**
+    Counts the number of occurences of each value in 'encoded'
+
+    @param 	vector to be processed
+    @return a map of which the key is a value of 'encoded' and the corresponding value is its number 
+    		of occurences
+	*/
 	std::map <unsigned int, double> occ;
 	std::set <unsigned int> values(begin(encoded), end(encoded));
 
@@ -252,7 +325,14 @@ std::map <unsigned int, double> nbOccurences(std::vector<unsigned int> encoded)
 }
 
 std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, double> occ)
-{
+{	
+	/**
+	Create a map to register the intervals for each symbol in order to implement the arithmetic encoder and decoder
+
+    @param 	the map of occurences as generated by the function 'nbOccurences'
+    @return a map containing 1) a symbol and 2) a pair of its corresponding interval
+	*/
+
 	// One symbol ⟷ one pair [min, max)
 	std::map<unsigned int, std::pair<double, double>> result;
 	double high = 0.;
@@ -265,16 +345,19 @@ std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsi
 		low = high;
 	}
 
-	// for (auto val : result)
-	// {
-	// 	std::cout << val.first << " : (" << val.second.first << ", " << val.second.second << ")" << std::endl;
-	// }
-
 	return result;
 }	
 
 void arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd, mpf_t& outbuff)
 {
+	/**
+	Implementation of an arithmetic encoder using arbitrary precise numbers.
+	The output is assigned by reference because it is not possible to output a type mpf_t
+
+    @param	intervalsMap: map generated by 'createIntervals'
+    		TREd: image to be encoded
+    		outbuff: reference to an arbitrary precise number, output of the encoder
+	*/
 	mpf_t high, low, range;
 	mpf_init_set_d(high, 1.);
 	mpf_init_set_d(low, 0.);
@@ -302,8 +385,14 @@ void arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> interva
 
 std::vector<unsigned int> arithmeticDecoder(mpf_t encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap, size_t size)
 {
-	// IMPORTANT: '0' is EOF character
-	// http://marknelson.us/2014/10/19/data-compression-with-arithmetic-coding/
+	/**
+	Implementation of an arithmetic decoder using arbitrary precise numbers.
+
+    @param	encoded: arbitrary precise number, output of the encoder
+    		intervalsMap: map generated by 'createIntervals'
+    		size: size of the image
+	@return the decoded vector
+	*/
 
 	mpf_t high, low, range, temp;
 	mpf_init_set_d(high, 1.);
