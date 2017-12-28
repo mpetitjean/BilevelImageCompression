@@ -22,7 +22,7 @@ void load(std::string filename, float * buffer)
 	}    
 }
 
-void storeFloat(float* arrayIn, std::string filename)
+void store(float* arrayIn, std::string filename)
 {
 	std::ofstream outfile;
 	outfile.open(filename, std::ios::out | std::ios::binary);
@@ -39,26 +39,6 @@ void normalize8bpp(float * bufferIn, float * bufferOut)
 	for (int i = 0; i < HEIGHT*WIDTH; i++)
 	{
 		bufferOut[i] = bufferIn[i]/255;
-	}
-}
-
-void addGaussianNoise(float * bufferIn, float * bufferOut)
-{
-	std::default_random_engine generator;
-  	std::normal_distribution<float> distribution(0, 0.024);
-
-	for (int h = 0; h < HEIGHT; h++)
-	{
-	    for (int w = 0; w < WIDTH; w++)
-	    {
-	        bufferOut[w + h*WIDTH] = bufferIn[w + h*WIDTH] + distribution(generator);
-
-	        // stay within [0;1]
-	        if (bufferOut[w + h*WIDTH] > 1.0)
-	        	bufferOut[w + h*WIDTH] = 1.0;
-	        else if (bufferOut[w + h*WIDTH] < 0.0)
-	        	bufferOut[w + h*WIDTH] = 0.0;
-	    }
 	}
 }
 
@@ -146,6 +126,12 @@ void unsharp_masking(float * image, float * blurred, float * result)
 	for (int i = 0; i < WIDTH*HEIGHT; ++i)
 	{
 		result[i] = 2*image[i] - blurred[i]; 
+
+		// stay within [0;1]
+        if (result[i] > 1.0)
+        	result[i] = 1.0;
+        else if (result[i] < 0.0)
+        	result[i] = 0.0;
 	}
 }
 
@@ -161,36 +147,29 @@ int main()
 	float * lena01 = new float[HEIGHT*WIDTH];
 	normalize8bpp(lena, lena01);
 
-	// Add noise
-	float * lenaNoisy = new float[HEIGHT*WIDTH];
-	addGaussianNoise(lena01, lenaNoisy);
-
-	storeFloat(lenaNoisy, "gaussian.raw");
-	float psnr = computePsnr(lena01, lenaNoisy, 1.0);
-	printf("PSNR of noisy is %.2f dB\n", psnr);
-
+	// Create kernel
 	float * kernel = new float[9];
 	createKernel(kernel);
 
+	// Convolve to blur
 	float * blurred = new float[HEIGHT*WIDTH];
 	convolve(lena01, kernel, blurred);
 
-	psnr = computePsnr(lena01, blurred, 1.0);
+	// Compute and display PSNR
+	float psnr = computePsnr(lena01, blurred, 1.0);
 	printf("PSNR of blurred is %.2f dB\n", psnr);
+	store(blurred, "blurred.raw");
 
-	storeFloat(blurred, "blurred.raw");
-
+	// Perform unsharp masking
 	float * sharped = new float[HEIGHT*WIDTH];
 	unsharp_masking(lena01, blurred, sharped);
-	storeFloat(sharped, "sharped.raw");
-
+	store(sharped, "sharped.raw");
 	psnr = computePsnr(lena01, sharped, 1.0);
 	printf("PSNR of sharped is %.2f dB\n", psnr);
 
 	// Free memory
 	delete lena;
 	delete lena01;
-	delete lenaNoisy;
 	delete kernel;
 	delete blurred;
 	delete sharped;

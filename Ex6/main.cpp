@@ -164,20 +164,16 @@ int main()
 	float psnr = computePsnr(lena01, lenaNoisy, 1.0);
 	printf("PSNR of noisy is %.2f dB\n", psnr);
 
+	// Blur
 	float * kernel = new float[9];
 	createKernel(kernel);
-
 	float * blurred = new float[HEIGHT*WIDTH];
 	convolve(lena01, kernel, blurred);
 
+	// Compare the PSNRs of blurred and noisy
 	psnr = computePsnr(lena01, blurred, 1.0);
 	printf("PSNR of blurred is %.2f dB\n\n", psnr);
-
 	storeFloat(blurred, "blurred.raw");
-
-	float * sharped = new float[HEIGHT*WIDTH];
-	unsharp_masking(lena01, blurred, sharped);
-	storeFloat(sharped, "sharped.raw");
 
 	float * noiseThenBlur1 = new float[HEIGHT*WIDTH];
 	float * noiseThenBlur = new float[HEIGHT*WIDTH];
@@ -205,7 +201,6 @@ int main()
 	delete lenaNoisy;
 	delete kernel;
 	delete blurred;
-	delete sharped;
 	delete noiseThenBlur;
 	return 0;
 }

@@ -137,8 +137,8 @@ void DCT1(float * bufferIn, float * bufferOut, float * DCT_basis)
 		{
 			for (int j = 0; j < BLK_SIZE; ++j)
 			{	
-				col = (int) (step/32);
-				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
+				col = (int) (step/BLK_SIZE2);
+				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%BLK_SIZE2)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
 			}
 		}
 
@@ -149,8 +149,8 @@ void DCT1(float * bufferIn, float * bufferOut, float * DCT_basis)
 		{
 			for (int j = 0; j < BLK_SIZE; ++j)
 			{
-				col = (int) (step/32);
-				bufferOut[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
+				col = (int) (step/BLK_SIZE2);
+				bufferOut[j + (step%BLK_SIZE2)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
 			}
 		}
 	}
@@ -174,8 +174,8 @@ void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
 		{
 			for (int j = 0; j < BLK_SIZE; ++j)
 			{	
-				col = (int) (step/32);
-				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
+				col = (int) (step/BLK_SIZE2);
+				tempIn[j + i*BLK_SIZE] = bufferIn[j + (step%BLK_SIZE2)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D];
 			}
 		}
 
@@ -186,8 +186,8 @@ void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
 		{
 			for (int j = 0; j < BLK_SIZE; ++j)
 			{
-				col = (int) (step/32);
-				tempDCT[j + (step%32)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
+				col = (int) (step/BLK_SIZE2);
+				tempDCT[j + (step%BLK_SIZE2)*BLK_SIZE + LENGTH_1D*col*BLK_SIZE + i*LENGTH_1D] = tempOut[j + i*BLK_SIZE];
 			}
 		}
 	}
@@ -201,12 +201,9 @@ void DCT2(float * bufferIn, float * bufferOut, float * DCT_basis)
 			{
 				bufferOut[row * LENGTH_1D + col + (step%BLK_SIZE)*BLK_SIZE2 + step/BLK_SIZE*LENGTH_1D*BLK_SIZE2] = 
 				tempDCT[(step%BLK_SIZE) + (step / BLK_SIZE) * LENGTH_1D + col * BLK_SIZE + row * LENGTH_1D * BLK_SIZE];
-				// if (step == 32 * 32 - 1)
-				// 	std::cout << col * 32 + row * 256 * 32 + step%32 + (step/32)*256<< std::endl;
 			}
 		}
 	}
-
 
 	delete tempIn;
 	delete tempOut;
@@ -235,9 +232,6 @@ int main()
 	float * DCT32 = new float[LENGTH_1D*LENGTH_1D];
 	DCT2(lena, DCT32, DCT_basis);
 	store(DCT32, "DCT32.raw", LENGTH_1D);
-
-	// int blk = 35;
-	// printf("%d\n",(int) (blk/32)*LENGTH_1D + blk%BLK_SIZE2);
 
 	return 0;
 }

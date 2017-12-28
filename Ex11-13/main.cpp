@@ -2,7 +2,7 @@
 #include <fstream>
 #include <cmath>
 
-#define LENGTH_1D	256
+#define LENGTH_1D		256
 
 void load(std::string filename, float * buffer)
 {
@@ -10,7 +10,7 @@ void load(std::string filename, float * buffer)
 	
 	if(is)
 	{
-		is.read (reinterpret_cast<char*> (buffer), LENGTH_1D*LENGTH_1D*sizeof(float));
+		is.read(reinterpret_cast<char*> (buffer), LENGTH_1D*LENGTH_1D*sizeof(float));
     	is.close();	
 	}
 	else
@@ -154,8 +154,73 @@ float entropy(float * pdf, int size)
 	return H;
 }
 
+
+std::string golomb(int input)
+{
+	int digits;
+	input ++;
+	int in = input;
+
+	// find number of bits
+	for (digits = 0; in > 0; in >>= 1)
+	{
+		digits ++;
+	}
+
+	// Binary representation
+	std::string bin;
+	for (int i = digits-1; i >= 0; i--)
+	{
+		bin += std::to_string((input >> i) & 1);
+	}
+
+	return std::string(digits-1, '0') + bin;
+}
+
+void toGolomb(int * encoded, std::string filename, int size)
+{
+	std::ofstream outfile;
+	outfile.open(filename, std::ios::out);
+
+	for (int i = 0; i < size; ++i)
+	{
+		outfile << golomb(encoded[i]);
+	}
+
+	outfile.close();
+}
+
+int * createLUT(int * occurences)
+{
+	
+}
+
+int * fromGolomb(std::string filename, int size)
+{
+	std::ifstream infile;
+	infile.open(filename);
+
+	int count = 0;
+	if(infile.is_open())
+	{
+		while(!infile.eof())
+		{	
+			if(infile.get() == '1')
+			{
+				
+			}
+		}	
+		infile.close();
+	}
+	else
+		std::cout << "Unable to open " << filename << std::endl;
+}
+
 int main()
 {
+	std::string res = golomb(4);
+	std::cout << res << std::endl;
+
 	// Read bilevel image
 	float * earth = new float[LENGTH_1D*LENGTH_1D];
 	load("earth_binary_256x256.raw", earth);	
@@ -178,7 +243,11 @@ int main()
 
 	// Find entropy
 	float H = entropy(pdf, occ);
-	std::cout << "Entropy is " << H << " bits" << std::endl;
+	std::cout << "Entropy is " << H << " bits/run" << std::endl;
+
+	// Encode Exp-Golomb
+	//toGolomb(encoded, "golombed.txt", size);
+	//fromGolomb("golombed.txt", size);
 
 	delete pdf;
 	delete P;

@@ -22,6 +22,21 @@ float psnr(float* image_noisy, float* image_ref, float max)
 	return 10*log10(max*max/mse);
 }
 
+float computeMSE(float* image_noisy, float* image_ref)
+{
+	float mse = 0;
+	for (int i = 0; i < WIDTH; i++)
+	{
+		for (int j = 0; j < HEIGHT; j++)
+		{
+			mse += pow((image_noisy[j+i*WIDTH] - image_ref[j+i*WIDTH]),2);
+		}
+	}
+	mse /= HEIGHT*WIDTH;
+
+	return mse;
+}
+
 void store(float* arrayIn, std::string filename)
 {
 	std::ofstream outfile;
@@ -90,14 +105,14 @@ int main(void)
 	float* uniformRandomImage = createUniformRandomImage(HEIGHT, WIDTH);
 	store(uniformRandomImage, "uniformRandom.raw");
 
-	float psnrCU = psnr(constantImage, uniformRandomImage, 1.0);
-	printf("PSNR between constant and uniform random distributed is %.2f dB\n", psnrCU);
-
-	float* gaussianImage = createGaussianImage(HEIGHT, WIDTH, 0.5, 0.1);
+	float* gaussianImage = createGaussianImage(HEIGHT, WIDTH, 0.5, 0.288);
 	store(gaussianImage, "gaussian.raw");
 
-	float psnrUG = psnr(uniformRandomImage, gaussianImage, 1.0);
-	printf("PSNR between uniform and gaussian is %.2f dB\n", psnrUG);
+	float mseU = computeMSE(constantImage, uniformRandomImage);
+	float mseG = computeMSE(constantImage, gaussianImage);
+
+	std::cout << "The MSE between the constant image and the uniform realization is " << mseU << std::endl;
+	std::cout << "The MSE between the constant image and the gaussian realization is " << mseG << std::endl;
 
 	return 0;
 }

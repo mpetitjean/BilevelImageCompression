@@ -20,10 +20,10 @@ void load(std::string filename, float * buffer)
 	}    
 }
 
-void storeFloat(float* arrayIn)
+void store(float* arrayIn, std::string filename)
 {
 	std::ofstream outfile;
-	outfile.open("outFloat.raw", std::ios::out | std::ios::binary);
+	outfile.open(filename, std::ios::out | std::ios::binary);
 
 	if (outfile.is_open()) 
 	{
@@ -40,10 +40,10 @@ void normalize8bpp(float * bufferIn, float * bufferOut)
 	}
 }
 
-void addGaussianNoise(float * bufferIn, float * bufferOut)
+void addGaussianNoise(float * bufferIn, float * bufferOut, float mean, float stdev)
 {
 	std::default_random_engine generator;
-  	std::normal_distribution<float> distribution(0, 0.024);
+  	std::normal_distribution<float> distribution(mean, stdev);
 
 	for (int h = 0; h < HEIGHT; h++)
 	{
@@ -88,16 +88,35 @@ int main()
 	normalize8bpp(lena, lena01);
 
 	// Add noise
-	float * lenaNoisy = new float[HEIGHT*WIDTH];
-	addGaussianNoise(lena01, lenaNoisy);
+	float * lenaNoisy1 = new float[HEIGHT*WIDTH];
+	float * lenaNoisy2 = new float[HEIGHT*WIDTH];
+	float * lenaNoisy3 = new float[HEIGHT*WIDTH];
+	float * lenaNoisy4 = new float[HEIGHT*WIDTH];
+	float sigma1 = 0.01, sigma2 = 0.05, sigma3 = 0.1, sigma4 = 0.2;
+	addGaussianNoise(lena01, lenaNoisy1, 0, sigma1);
+	addGaussianNoise(lena01, lenaNoisy2, 0, sigma2);
+	addGaussianNoise(lena01, lenaNoisy3, 0, sigma3);
+	addGaussianNoise(lena01, lenaNoisy4, 0, sigma4);
 
-	storeFloat(lena01);
-	float psnr = computePsnr(lena01, lenaNoisy, 1.0);
-	printf("PSNR is %.2f dB\n", psnr); 
+	store(lenaNoisy1, "noisy1.raw");
+	store(lenaNoisy2, "noisy2.raw");
+	store(lenaNoisy3, "noisy3.raw");
+	store(lenaNoisy4, "noisy4.raw");
+	float psnr1 = computePsnr(lena01, lenaNoisy1, 1.0);
+	float psnr2 = computePsnr(lena01, lenaNoisy2, 1.0);
+	float psnr3 = computePsnr(lena01, lenaNoisy3, 1.0);
+	float psnr4 = computePsnr(lena01, lenaNoisy4, 1.0);
+	std::cout << "PSNR is " <<  psnr1 << " dB when stdev is " << sigma1 << std::endl;
+	std::cout << "PSNR is " <<  psnr2 << " dB when stdev is " << sigma2 << std::endl;
+	std::cout << "PSNR is " <<  psnr3 << " dB when stdev is " << sigma3 << std::endl;
+	std::cout << "PSNR is " <<  psnr4 << " dB when stdev is " << sigma4 << std::endl;
 
 	// Free memory
 	delete lena;
 	delete lena01;
-	delete lenaNoisy;
+	delete lenaNoisy1;
+	delete lenaNoisy2;
+	delete lenaNoisy3;
+	delete lenaNoisy4;
 	return 0;
 }
