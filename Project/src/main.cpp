@@ -80,7 +80,7 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 int main()
 {
 	std::vector<float> imagefloat(256*256);
-	load("earth_binary_256x256.raw", imagefloat);
+	load("lena_binary_dithered_256x256.raw", imagefloat);
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
@@ -96,7 +96,7 @@ int main()
 	std::vector<unsigned int> run_length = TRE(coeff);
 
 	run_length.push_back(0);
-	std::unordered_map<unsigned int, double> dico = nbOccurences(run_length);
+	std::unordered_map<unsigned int, double> dico = probability(run_length);
 	std::unordered_map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
 	mpf_class res = arithmeticEncoder(valmap, run_length);
 	std::cout << "Encoded image = " << res << std::endl;
