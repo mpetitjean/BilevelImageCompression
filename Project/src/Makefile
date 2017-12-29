@@ -1,18 +1,23 @@
-PROGRAM_NAME = main
+CC = g++
+CFLAGS = -Wall -Wextra -pedantic -std=c++14  -lgmp -lgmpxx
 
-OBJECT_FILES = $(PROGRAM_NAME).o
-CFLAGS = -Wall -Wextra -pedantic -std=c++11
+SUFFIXES = .cpp .o
+.SUFFIXES: $(SUFFIXES) .
 
-$(PROGRAM_NAME) : $(OBJECT_FILES)
-	g++ $(CFLAGS) -o $@ $(OBJECT_FILES) -lgmp -lgmpxx
+PROG = main
+SRCS = $(wildcard *.cpp)
+OBJS = $(SRCS:.cpp=.o)
 
-$(PROGRAM_NAME).o : $(PROGRAM_NAME).cpp
-	g++ $(CFLAGS) -c $< -lgmp -lgmpxx
+$(PROG): $(OBJS)
+	$(CC) $^ -o $@ $(CFLAGS)
 
-clean :
-	$(RM) $(PROGRAM_NAME)
-	$(RM) $(OBJECT_FILES)
-	$(RM) *~ *.bak
+.cpp.o:
+	$(CC) -c $< -o $@ $(CFLAGS)
 
-run :
-	@$(MAKE) && ./$(PROGRAM_NAME) $(ARGS)
+run: $(PROG)
+	./$(PROG) $(ARGS)
+
+.PHONY: clean
+
+clean:
+	$(RM) $(OBJS) $(PROG)
