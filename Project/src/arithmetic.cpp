@@ -4,14 +4,13 @@
 #include <map>
 #include "arithmetic.hpp"
 
-std::unordered_map <unsigned int, double> nbOccurences(std::vector<unsigned int> encoded)
+std::unordered_map <unsigned int, double> probability(std::vector<unsigned int> encoded)
 {
 	/**
-    Counts the number of occurences of each value in 'encoded'
+    Counts the probability of each value in 'encoded'
 
     @param 	vector to be processed
-    @return a map of which the key is a value of 'encoded' and the corresponding value is its number 
-    		of occurences
+    @return a map of which the key is a value of 'encoded' and the corresponding value is its probabilty
 	*/
 	std::unordered_map <unsigned int, double> occ;
 	std::for_each(encoded.begin(), encoded.end(), [&occ](unsigned int val)

@@ -6,7 +6,7 @@
 #include <gmpxx.h>
 
 
-std::unordered_map <unsigned int, double> nbOccurences(std::vector<unsigned int> encoded);
+std::unordered_map <unsigned int, double> probability(std::vector<unsigned int> encoded);
 
 std::unordered_map<unsigned int, std::pair<double, double>> createIntervals(std::unordered_map <unsigned int, double> occ);
 
