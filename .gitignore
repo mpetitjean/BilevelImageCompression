@@ -41,3 +41,6 @@
 *.exe
 *.out
 *.app
+
+# LaTeX output
+build/
