@@ -80,22 +80,24 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 int main()
 {
 	std::vector<float> imagefloat(256*256);
-	load("lena_binary_dithered_256x256.raw", imagefloat);
+	// load("lena_binary_dithered_256x256.raw", imagefloat);
+	load("earth_binary_256x256.raw", imagefloat);
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
-	mpf_set_default_prec(59000);
+	mpf_set_default_prec(70000);
 	//1) Shrink image in column
-	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
+	// std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
 
-	std::set<unsigned char> dictionnary_set(begin(shrinked), end(shrinked));
-	std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
+	// std::set<unsigned char> dictionnary_set(begin(shrinked), end(shrinked));
+	// std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
 	
-	std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
+	// std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
 
-	std::vector<unsigned int> run_length = TRE(coeff);
+	// std::vector<unsigned int> run_length = TRE(coeff);
+	std::vector<unsigned int> run_length = encode_rle(image);
 
-	run_length.push_back(0);
+	run_length.push_back(-1);
 	std::unordered_map<unsigned int, double> dico = probability(run_length);
 	std::unordered_map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
 	mpf_class res = arithmeticEncoder(valmap, run_length);
@@ -103,12 +105,14 @@ int main()
 	std::ofstream outfile ("compressed.raw");
 	mp_exp_t exp; 
 	outfile << res.get_str(exp, 2) << "e" << exp;
+	std::cout << exp << std::endl;
 	outfile.close();
 	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap); 		
 	rtest.pop_back();
-	std::vector<unsigned char> coeff2 = iTRE(rtest);
-	std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
-	std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
+	std::vector<unsigned char> result = decode_rle(rtest);
+	// std::vector<unsigned char> coeff2 = iTRE(rtest);
+	// std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
+	// std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
 	std::cout << (result == image) << std::endl;
 
 	store("result.raw", result);

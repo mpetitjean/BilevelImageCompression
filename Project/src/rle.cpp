@@ -17,6 +17,10 @@ std::vector<unsigned int> encode_rle(std::vector<unsigned char> image)
 	output.reserve(image.size());
 
 	std::vector<unsigned char>::iterator it = begin(image);
+	if(*it)
+	{
+		output.push_back(0);
+	}
 
 	while ((it += output.back())!=end(image))
 	{	

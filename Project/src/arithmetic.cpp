@@ -1,5 +1,6 @@
 #include <iostream>
 #include <set>
+#include <cmath>
 #include <algorithm>
 #include <map>
 #include "arithmetic.hpp"
@@ -62,12 +63,37 @@ mpf_class arithmeticEncoder(std::unordered_map<unsigned int, std::pair<double, d
 	for (auto value : TREd)
 	{
 		range = high - low;
-		std::cout << range << std::endl;
+		// std::cout << range << std::endl;
 	
 		high = low + range*intervalsMap[value].second;
 		low = low + range*intervalsMap[value].first;
+		// std::cout << high-low << std::endl;
 	}
 	outbuff = low + (high - low)/2.;
+
+	// Truncate precision
+	range = high-low;
+
+	mp_exp_t exp; 
+	range.get_str(exp, 10);
+	float res = -exp*log2(10);
+	std::cout << (int) res << std::endl;
+
+	int prec = (int) res;
+	while(range != 0)
+	{
+		range.set_prec(--prec);
+		std::cout << range << std::endl;
+	}
+
+
+	std::cout << "Before truncation: " << outbuff << std::endl;
+	mpf_class temp = outbuff;
+	outbuff.set_prec((int) res);
+	std::cout << "After truncation: " << outbuff << std::endl;
+
+	if(outbuff == temp)
+		std::cout << "caca\n"; 
 	return outbuff;
 }
 
@@ -98,7 +124,7 @@ std::vector<unsigned int> arithmeticDecoder(mpf_class encoded, std::unordered_ma
 		high = low + range*intervalsMap[decoded.back()].second;
 		low = low + range*intervalsMap[decoded.back()].first;
 	}
-	while(decoded.back() != 0);
+	while(decoded.back() != (uint)-1);
 
 	return decoded;
 }

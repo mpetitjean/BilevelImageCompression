@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/dynamic_bitset.hpp>
+#include <numeric>
 #include "golomb.hpp"
 
 std::string golomb(std::vector<unsigned int> stream)
