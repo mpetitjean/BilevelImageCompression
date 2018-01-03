@@ -33,9 +33,9 @@ binary1D = np.ravel(binary, 'C')
 binary1D.astype(np.float32)
 
 # Convert to byte arrays to print
-toWrite = struct.pack('>%sf' % binary1D.size, *binary1D);
+toWrite = struct.pack('<%sf' % binary1D.size, *binary1D);
 
 # Write
-file = open('airport.raw', 'wb')
+file = open('airport_1024x1024.raw', 'wb')
 file.write(toWrite)
 file.close()

@@ -1,0 +1,11 @@
+image, size, CR (no LUT, RLE+arith)
+earth, 256, 2.65
+lena, 256, 1.06
+house, 256, 2.73
+baboon, 512, 1.78
+airport, 1024, 2.37
+
+
+
+
+
