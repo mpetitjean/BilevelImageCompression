@@ -5,7 +5,9 @@ house, 256, 2.73
 baboon, 512, 1.78
 airport, 1024, 2.37
 
-
-
-
-
+image, size, CR (no LUT, full paper+arith)
+earth, 256, 2.63
+lena, 256, 1.13
+house, 256, ERROR
+baboon, 512, 1.65
+airport, 1024, ERROR
