@@ -80,8 +80,8 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 int main()
 {
 	std::vector<float> imagefloat(256*256);
-	// load("lena_binary_dithered_256x256.raw", imagefloat);
-	load("earth_binary_256x256.raw", imagefloat);
+	load("lena_binary_dithered_256x256.raw", imagefloat);
+	// load("earth_binary_256x256.raw", imagefloat);
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	// MTF
@@ -97,17 +97,43 @@ int main()
 	// std::vector<unsigned int> run_length = TRE(coeff);
 	std::vector<unsigned int> run_length = encode_rle(image);
 
-	run_length.push_back(-1);
-	std::unordered_map<unsigned int, double> dico = probability(run_length);
-	std::unordered_map<unsigned int, std::pair<double, double>> valmap = createIntervals(dico);
-	mpf_class res = arithmeticEncoder(valmap, run_length);
-	std::cout << "Encoded image = " << res << std::endl;
-	std::ofstream outfile ("compressed.raw");
-	mp_exp_t exp; 
-	outfile << res.get_str(exp, 2) << "e" << exp;
-	std::cout << exp << std::endl;
+	run_length.push_back(600);
+
+	std::ofstream outfile ("tre.raw");
+	// mp_exp_t exp; 
+	for (auto value : run_length)
+	outfile << value << std::endl;
+	// outfile << res.get_str(exp, 2) << "e" << exp;std::bitset<8>((char)exp);
+
+
+	// std::cout << exp << std::endl;
 	outfile.close();
-	std::vector<unsigned int> rtest = arithmeticDecoder(res, valmap); 		
+	std::unordered_map<unsigned int, unsigned int> dico = probabilityInt(run_length);
+	uint size;
+	std::unordered_map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size);
+	std::string res = arithmeticEncoderInt(valmap, run_length, size);
+	std::cout << "Encoded image = " << res << std::endl;
+	outfile.open("compressed.raw");
+	// mp_exp_t exp; 
+	outfile << res;
+	// outfile << res.get_str(exp, 2) << "e" << exp;std::bitset<8>((char)exp);
+	;
+
+
+	// std::cout << exp << std::endl;
+	outfile.close();
+	std::vector<unsigned int> rtest = arithmeticDecoderInt(res, valmap, size); 		
+	std::cout << (rtest == run_length) << std::endl;
+	outfile.open("resss.raw");
+	// mp_exp_t exp; 
+	for (auto i = 0; i < rtest.size(); ++i)
+	outfile << run_length.at(i) << " " << rtest.at(i) << std::endl;
+	// outfile << res.get_str(exp, 2) << "e" << exp;std::bitset<8>((char)exp);
+	;
+
+
+	// std::cout << exp << std::endl;
+	outfile.close();
 	rtest.pop_back();
 	std::vector<unsigned char> result = decode_rle(rtest);
 	// std::vector<unsigned char> coeff2 = iTRE(rtest);
