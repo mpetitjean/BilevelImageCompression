@@ -18,7 +18,9 @@
 *.raw
 !lena_256x256.raw
 !earth_binary_256x256.raw
+!baboon_512x512.raw
 !lena_binary_dithered_256x256.raw
+!airport_1024x1024.raw
 *.jpeg
 # Precompiled Headers
 *.gch
