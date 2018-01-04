@@ -19,8 +19,6 @@ std::vector<float> normalize(std::vector<float> P);
 
 std::vector<unsigned int> nbOccurences(std::vector<uint> encoded);
 
-std::vector<uint> createLUT(const std::vector<uint> v);
-
-
+std::vector<unsigned int> createLUT(std::vector<unsigned int> occurences, std::vector<unsigned int> input);
 
 #endif
