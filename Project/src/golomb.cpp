@@ -2,6 +2,7 @@
 #include <fstream>
 #include <boost/dynamic_bitset.hpp>
 #include <numeric>
+#include <climits>
 #include "golomb.hpp"
 
 std::string golomb(std::vector<unsigned int> stream)
@@ -24,7 +25,7 @@ std::string golomb(uint value)
 {
  	std::string buffer;
  	++value;
-	to_string(boost::dynamic_bitset<> (2 * (31 - __builtin_clz(value)) + 1, value), buffer);
+	to_string(boost::dynamic_bitset<> (2 * (CHAR_BIT*sizeof(value) - __builtin_clz(value)) - 1, value), buffer);
 	return buffer;
 }
 
@@ -96,36 +97,38 @@ std::vector<float> normalize(std::vector<float> P)
 
 std::vector<unsigned int> nbOccurences(std::vector<uint> encoded)
 {
-	std::vector<unsigned int> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
+	std::vector<unsigned int> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0);
 	for (int i : encoded)
-		occ[i]++;
+		++occ[i];
 	return occ;
 }
 
-std::vector<unsigned int> createLUT(const std::vector<unsigned int> v)
+std::vector<unsigned int> createLUT(std::vector<unsigned int> occurences, std::vector<unsigned int> input)
 {
-	/**
+	/** OUTDATED
     Creates a LUT for entropy coding, its purpose being to map short
     codewords to probable symbols
 
     @param vector containing the number of occurences of each run length
-    @return vector of which the values indicate to what symbol its index is
+    @return vector of which the index indicate to what symbol its value is
     		mapped. Example:
-    		vector {2,0,1,3,4} means that the mapping is 0-1,1-0,2-1,3-3,4-4
+    		vector {2,5,1,3,4} means that the mapping is 2-0,5-1,1-2,3-3,4-4
 	*/
 
 	// initialize original index locations
-	std::vector<unsigned int> idx(v.size());
+	std::sort(begin(input), end(input));
+	size_t size = std::unique(begin(input), end(input)) - begin(input);
+	std::vector<unsigned int> idx(occurences.size());
 	iota(idx.begin(), idx.end(), 0);
 
-	// sort indexes based on comparing values in v
+	// sort indexes based on comparing values in occurences
 	sort(idx.begin(), idx.end(),
-	   [v](uint i1, uint i2) {return v[i1] > v[i2];});
+	   [occurences](uint i1, uint i2) {return occurences[i1] > occurences[i2];});
 
-	std::vector<uint> LUT(v.size());
+	std::vector<uint> LUT(size);
 
 	// Fill LUT
-	for (size_t i = 0; i <  v.size(); ++i)
+	for (size_t i = 0; i <  size; ++i)
 	{
 			LUT[i] = idx[i];
 	}
