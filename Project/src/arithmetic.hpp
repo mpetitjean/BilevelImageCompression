@@ -20,6 +20,6 @@ std::map <unsigned int, unsigned int> probabilityInt(std::vector<unsigned int> e
 
 std::map<unsigned int, std::pair<unsigned int, unsigned int>> createIntervalsInt(std::map <unsigned int, unsigned int> occ, unsigned int &size);
 
-std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size);
+std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size, int eof);
 
 #endif
