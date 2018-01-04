@@ -158,6 +158,35 @@ void decompress(std::string filename, int imSize)
 		store(name + "_decompressed.raw", result);
 		std::cout << "Done." << std::endl;
 	}
+	else if (method == "11")
+	{
+		std::cout << "\nThe file was compressed using RLE+ExpGolomb." << std::endl;
+
+		// Parse file
+		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
+		std::string strRes = compressed.substr(2+32,sizedata);
+		int sizeDic = compressed.length() - 34 - sizedata;
+		std::string strDic = compressed.substr(2+32+sizedata,sizeDic);
+
+		// Recover LUT
+		std::vector<unsigned int> LUT;
+		LUT.reserve(sizeDic/32);
+		for (int i = 0; i < sizeDic; i+=32)
+		{
+			LUT.push_back((uint)(std::stol(strDic.substr(i,32), nullptr, 2)));
+		}
+
+		// Inverse golomb and RLE
+		std::ofstream outfile("golombed.temp");
+		outfile << strRes;
+		outfile.close();
+		std::vector<uint> decoded = golomb("golombed.temp", sizedata, LUT);
+		std::vector<unsigned char> result = decode_rle(decoded);
+
+		std::string name = filename.substr(0,filename.length()-4);
+		store(name + "_decompressed.raw", result);
+		std::cout << "Done." << std::endl;
+	}
 	else
 		std::cerr << "Compression method unrecognized." << std::endl;
 }
@@ -250,6 +279,41 @@ std::string encodeM2FAth(std::vector<unsigned char> image, int imSize)
  	return compressed;
 }
 
+std::string encodeRLEGb(std::vector<unsigned char> image, int imSize)
+{
+	// RLE Encoding
+	std::vector<unsigned int> run_length = encode_rle(image);
+
+	// Perform Golomb encoding
+	std::vector<unsigned int> occ = nbOccurences(run_length);
+	std::vector<unsigned int> LUT = createLUT(occ, run_length);
+	std::string res = golomb(run_length, LUT);
+
+	// Generate header for the file	
+	std::string header = "11"; //0b11 = 3 means RLE+golomb 
+	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
+
+	// Encode LUT
+	std::string dic;
+	for (auto val : LUT)
+	{
+		dic += std::bitset<sizeof(int)*8>(val).to_string();
+	}
+
+	// Concatenation
+	std::string compressed = header + res + dic;
+	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
+
+	std::cout << "Testing RLE with Exp-Golomb Coder:" << std::endl;
+	std::cout << "Total size = "  << compressed.length() <<  " bits. ";
+	std::cout << "Compression ratio is " << ratio << "." << std::endl;
+ 	std::cout << "Header = " << header.length() <<  " bits" << std::endl;
+ 	std::cout << "Data = " << res.length() <<  " bits" << std::endl;
+ 	std::cout << "Dictionnaries = " << dic.length() <<  " bits" << std::endl << std::endl;
+
+ 	return compressed;
+}
+
 void compress(std::string filename, int imSize)
 {
 	std::cout << "Starting compression of " << filename << "..." << std::endl << std::endl;
@@ -262,10 +326,11 @@ void compress(std::string filename, int imSize)
 	// Test several encoding schemes
 	std::string RLEAthEncoded = encodeRLEAth(image, imSize);
 	std::string M2FAthEncoded = encodeM2FAth(image, imSize);
+	std::string RLEGbEncoded = encodeRLEGb(image, imSize);
 
 	// Select best performance
 	// TODO
-	std::string compressed = M2FAthEncoded;
+	std::string compressed = RLEGbEncoded;
 	
 	// Write to file
 	std::string name = filename.substr(0,filename.length()-4);
