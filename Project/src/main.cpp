@@ -329,8 +329,18 @@ void compress(std::string filename, int imSize)
 	std::string RLEGbEncoded = encodeRLEGb(image, imSize);
 
 	// Select best performance
-	// TODO
-	std::string compressed = RLEGbEncoded;
+	unsigned int min = -1;
+	int minInd;
+	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded};
+	for (int i = 0; i < 3; ++i)
+	 {
+	 	if (vecMeth[i].size() < min)
+	 	{
+	 		min = vecMeth[i].size();
+	 		minInd = i;
+	 	}
+	 } 
+	std::string compressed = vecMeth[minInd];
 	
 	// Write to file
 	std::string name = filename.substr(0,filename.length()-4);
