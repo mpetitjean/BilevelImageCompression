@@ -22,6 +22,7 @@
 !lena_binary_dithered_256x256.raw
 !airport_1024x1024.raw
 *.jpeg
+*.jpp
 # Precompiled Headers
 *.gch
 *.pch
