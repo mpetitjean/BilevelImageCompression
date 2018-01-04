@@ -94,9 +94,9 @@ std::vector<float> normalize(std::vector<float> P)
 	return P;
 }
 
-std::vector<float> nbOccurences(std::vector<uint> encoded)
+std::vector<unsigned int> nbOccurences(std::vector<uint> encoded)
 {
-	std::vector<float> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
+	std::vector<unsigned int> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
 	for (int i : encoded)
 		occ[i]++;
 	return occ;

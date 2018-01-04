@@ -17,7 +17,7 @@ std::vector<uint> golomb(std::string filename, size_t size);
 
 std::vector<float> normalize(std::vector<float> P);
 
-std::vector<float> nbOccurences(std::vector<uint> encoded);
+std::vector<unsigned int> nbOccurences(std::vector<uint> encoded);
 
 std::vector<uint> createLUT(const std::vector<uint> v);
 

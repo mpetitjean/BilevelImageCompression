@@ -5,7 +5,7 @@
 #include <map>
 #include "arithmetic.hpp"
 
-std::unordered_map <unsigned int, double> probability(std::vector<unsigned int> encoded)
+std::map <unsigned int, double> probability(std::vector<unsigned int> encoded)
 {
 	/**
     Counts the probability of each value in 'encoded'
@@ -13,7 +13,7 @@ std::unordered_map <unsigned int, double> probability(std::vector<unsigned int> 
     @param 	vector to be processed
     @return a map of which the key is a value of 'encoded' and the corresponding value is its probabilty
 	*/
-	std::unordered_map <unsigned int, double> occ;
+	std::map <unsigned int, double> occ;
 	std::for_each(encoded.begin(), encoded.end(), [&occ](unsigned int val)
 		{++occ[val];});
 
@@ -24,7 +24,7 @@ std::unordered_map <unsigned int, double> probability(std::vector<unsigned int> 
 	return occ;
 }
 
-std::unordered_map <unsigned int, unsigned int> probabilityInt(std::vector<unsigned int> encoded)
+std::map <unsigned int, unsigned int> probabilityInt(std::vector<unsigned int> encoded)
 {
 	/**
     Counts the probability of each value in 'encoded'
@@ -33,13 +33,13 @@ std::unordered_map <unsigned int, unsigned int> probabilityInt(std::vector<unsig
     @return a map of which the key is a value of 'encoded' and the corresponding value is its probabilty
     */
 	
-	std::unordered_map <unsigned int, unsigned int> occ;
+	std::map <unsigned int, unsigned int> occ;
 	std::for_each(encoded.begin(), encoded.end(), [&occ](unsigned int val)
 		{++occ[val];});
 	return occ;
 }
 
-std::unordered_map<unsigned int, std::pair<double, double>> createIntervals(std::unordered_map <unsigned int, double> occ)
+std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, double> occ)
 {	
 	/**
 	Create a map to register the intervals for each symbol in order to implement the arithmetic encoder and decoder
@@ -49,7 +49,7 @@ std::unordered_map<unsigned int, std::pair<double, double>> createIntervals(std:
 	*/
 
 	// One symbol ⟷ one pair [min, max)
-	std::unordered_map<unsigned int, std::pair<double, double>> result;
+	std::map<unsigned int, std::pair<double, double>> result;
 	double high = 0.;
 	double low = 0.;
 
@@ -63,7 +63,7 @@ std::unordered_map<unsigned int, std::pair<double, double>> createIntervals(std:
 	return result;
 }
 
-std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> createIntervalsInt(std::unordered_map <unsigned int, unsigned int> occ, unsigned int &size)
+std::map<unsigned int, std::pair<unsigned int, unsigned int>> createIntervalsInt(std::map <unsigned int, unsigned int> occ, unsigned int &size)
 {	
 	/**
 	Create a map to register the intervals for each symbol in order to implement the arithmetic encoder and decoder
@@ -73,7 +73,7 @@ std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> createIn
 	*/
 
 	// One symbol ⟷ one pair [min, max)
-	std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> result;
+	std::map<unsigned int, std::pair<unsigned int, unsigned int>> result;
 	unsigned int high = 0;
 	unsigned int low = 0;
 
@@ -88,7 +88,7 @@ std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> createIn
 	return result;
 }	
 
-std::string arithmeticEncoderInt(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, std::vector<unsigned int> TREd, unsigned int size)
+std::string arithmeticEncoderInt(std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, std::vector<unsigned int> TREd, unsigned int size)
 {
 	/**
 	Implementation of an arithmetic encoder using arbitrary precise numbers.
@@ -104,7 +104,7 @@ std::string arithmeticEncoderInt(std::unordered_map<unsigned int, std::pair<unsi
 	for (auto value : TREd)
 	{
 		range = (long)(high - low) + 1;
-		std::cout << range << std::endl;
+		//std::cout << range << std::endl;
 	
 		high = low + (range*intervalsMap[value].second) / size - 1;
 		low = low + (range*intervalsMap[value].first) / size;
@@ -159,7 +159,7 @@ std::string arithmeticEncoderInt(std::unordered_map<unsigned int, std::pair<unsi
 	return outbuff;
 }
 
-mpf_class arithmeticEncoder(std::unordered_map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd)
+mpf_class arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd)
 {
 	/**
 	Implementation of an arithmetic encoder using arbitrary precise numbers.
@@ -188,22 +188,20 @@ mpf_class arithmeticEncoder(std::unordered_map<unsigned int, std::pair<double, d
 	mp_exp_t exp; 
 	range.get_str(exp, 10);
 	float res = -exp*log2(10);
-	std::cout << (int) res << std::endl;
+	//std::cout << (int) res << std::endl;
 
 	// int prec = (int) res;
 
 
-	std::cout << "Before truncation: " << outbuff << std::endl;
+	// std::cout << "Before truncation: " << outbuff << std::endl;
 	mpf_class temp = outbuff;
 	outbuff.set_prec((int) res);
-	std::cout << "After truncation: " << outbuff << std::endl;
+	// std::cout << "After truncation: " << outbuff << std::endl;
 
-	if(outbuff == temp)
-		std::cout << "caca\n"; 
 	return outbuff;
 }
 
-std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size)
+std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size)
 {
 	/**
 	Implementation of an arithmetic decoder using arbitrary precise numbers.
@@ -220,9 +218,9 @@ std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::unorder
 	unsigned int high = 0xFFFFFFFFU, low = 0, value;
 	unsigned long range, temp;
 	std::vector<unsigned int> decoded;
-	printf("there\n");
+	// printf("there\n");
 	value = std::stoul(encoded.substr(0, 32), nullptr, 2);
-	std::cout << value << std::endl;
+	// std::cout << value << std::endl;
 	encoded.erase(0, 32);
 
 	do
@@ -259,14 +257,14 @@ std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::unorder
 			value += encoded.empty() ? 1 : std::stoul(encoded.substr(0, 1), nullptr, 2);
 			encoded.erase(0, 1);
 		}
-		std::cout << decoded.back() << std::endl;
+		// std::cout << decoded.back() << std::endl;
 	}
 	while(decoded.back() != (uint) 600);
 
 	return decoded;
 }
 
-std::vector<unsigned int> arithmeticDecoder(mpf_class encoded, std::unordered_map<unsigned int, std::pair<double, double>> intervalsMap)
+std::vector<unsigned int> arithmeticDecoder(mpf_class encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap)
 {
 	/**
 	Implementation of an arithmetic decoder using arbitrary precise numbers.
