@@ -140,8 +140,6 @@ std::string arithmeticEncoderInt(std::map<unsigned int, std::pair<unsigned int, 
 			high <<= 1;
 			++high;
 		}
-		if (value == (uint)-1)
-			break;
 	}
 	++pending_bit;
 	if ( low < 0x40000000U)
@@ -201,7 +199,7 @@ mpf_class arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> in
 	return outbuff;
 }
 
-std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size, int eof)
+std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size)
 {
 	/**
 	Implementation of an arithmetic decoder using arbitrary precise numbers.
@@ -259,7 +257,7 @@ std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<uns
 		}
 		// std::cout << decoded.back() << std::endl;
 	}
-	while(decoded.back() != (uint) eof);
+	while(decoded.back() != (uint) -1);
 
 	return decoded;
 }
