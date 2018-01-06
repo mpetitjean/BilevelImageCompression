@@ -6,15 +6,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
-\usepackage{setspace}
-\usepackage{geometry}
-\geometry{
-	a4paper,
-	left=25mm,
-	right=25mm,
-	top=25mm,
-	bottom=25mm,
-}
+\usepackage{xcolor}
 \usepackage{babel}
 \usepackage{lmodern}
 \usepackage[backend=bibtex,style=numeric,sorting=none]{biblatex}
@@ -26,6 +18,13 @@
 \pgfplotsset{compat=newest}
 \usepgfplotslibrary{units}
 \usepackage{standalone}
+\usepackage{geometry}
+\geometry{
+bottom=20mm,
+left=20mm,
+right=20mm,
+top = 20mm,
+}
 \usepackage{tikzscale}
 \makeatletter
 \pgfplotsset{
@@ -43,12 +42,12 @@
 \addbibresource{sources.bib}
 \begin{document}
 	
-\title{Lossles compression of bilevel images}
+\title{Lossles compression of bilevel images\vspace*{-0.5cm}}
 
-\author{\IEEEauthorblockN{Cédric Hannotier}
+\author{\IEEEauthorblockN{\vspace*{-1cm}Cédric Hannotier}
 	\IEEEauthorblockA{\href{mailto:channoti@ulb.ac.be}{channoti@ulb.ac.be}}
 	\and
-	\IEEEauthorblockN{Mathieu Petitjean}
+	\IEEEauthorblockN{\vspace*{-1cm}Mathieu Petitjean}
 	\IEEEauthorblockA{\href{mailto:mpetitje@ulb.ac.be}{mpetitje@ulb.ac.be}}}
 
 % make the title area
@@ -56,58 +55,7 @@
 \thispagestyle{plain}
 \pagestyle{plain}
 
-
-\begin{abstract}
-	Compression babyyy
-\end{abstract}
-
-\begin{IEEEkeywords}
-	compression, jpp 
-\end{IEEEkeywords}
-
 \IEEEpeerreviewmaketitle
-
-
-%\pagenumbering{gobble}
-%
-%\begin{titlepage}
-%	{\setstretch{1.0}
-%		
-%		\includegraphics[width=\textwidth]{img/Logos.pdf} \hspace{4.5cm}
-%		
-%		\vspace{1 cm}
-%		\large
-%		
-%		\begin{tabular}{lr}
-%			\begin{minipage}[t]{0.5\textwidth}
-%				{\small\textsc{Brussels Faculty of Enginering} \\
-%					Université Libre de Bruxelles\\
-%					Vrije Universiteit van Brussel\\}
-%			\end{minipage} & \begin{minipage}[t]{0.45\textwidth}
-%				\begin{flushright}
-%					{\small Academic Year 2017-2018}
-%				\end{flushright}
-%			\end{minipage}
-%		\end{tabular}
-%		
-%		\vspace{2cm}
-%		\begin{center}
-%			\Large 
-%			\textbf{Lossless Bilevel Image Compression} \\Project report\\
-%			\large 
-%			\vspace*{2cm}
-%			Cedric Hannotier \& Mathieu Petitjean\\
-%		\end{center}
-%		
-%		
-%		\vspace{\stretch{2}}
-%		
-%		\begin{minipage}[t]{\textwidth}
-%			\normalsize \textbf{INFO-Y093}: Image and Video Technology\\
-%		\end{minipage}
-%	}
-%	
-%\end{titlepage}
 
 \input{sections/intro}
 \input{sections/description}

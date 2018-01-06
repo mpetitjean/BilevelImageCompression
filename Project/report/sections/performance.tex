@@ -1,6 +1,72 @@
 \section{Performance analysis}
 
-%\begin{figure}[h]
-%	\centering
-%	\input{img/bar}
-%\end{figure}
+The various methods have been tested on several test images. The results are summarized in \autoref{tab:CR}, where the compression ratio is shown.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|l|cccc|}
+		\hline
+		Image                 &RLE-Gb & RLE-Ath & MTF-Ath & Benzid \\ \hline
+		256x256      & 1                           & 1                            & 1                            & 1      \\
+		noisy, 256x256 & 1                           & 1                            & 1                            & 1      \\
+		512x512      & 1                           & 1                            & 1                            & 1      \\
+		1024x1024   & 1                           & 1                            & 1                            & 1      \\
+		2048x2048 & 1                           & 1                            & 1                            & 1      \\ \hline
+	\end{tabular}
+	\caption{Performance of the different schemes on images with various sizes. The best compression ratio is bolded for each image.}
+	\label{tab:CR}
+\end{table}
+
+It appears that the MTF-Ath is the best performer for small images, while the RLE-Ath is the best for bigger images. It is easy to understand why when looking at \autoref{fig:earth} and \autoref{fig:big}, which highlight the impact of the header, compressed data and dictionaries on the final size.
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}
+	\begin{axis}[
+	ybar stacked,
+%	enlargelimits=0.15,
+	ymin = 0,
+	legend style={at={(0.5,0.95)},
+		anchor=north,legend columns=-1},
+	ylabel={Size in bits},
+	symbolic x coords={RLE-Gb, RLE-Ath, MTF-Ath, Benzid},
+	xtick=data,
+	]
+	%\addplot table [x=a, y=c, col sep=comma] {data.csv};
+	\addplot+[ybar, color=lime] table [x=method, y=bits, col sep=comma] {data/earth/benchmark-header.csv};
+	\addplot+[ybar, color=teal] table [x=method, y=bits, col sep=comma] {data/earth/benchmark-data.csv};
+	\addplot+[ybar, color=violet] table [x=method, y=bits, col sep=comma] {data/earth/benchmark-dic.csv};
+	\legend{Header, Data, LUT}
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Performance of the techniques on a 256x256 image (earth)}
+	\label{fig:earth}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\begin{tikzpicture}
+	\begin{axis}[
+	ybar stacked,
+	%	enlargelimits=0.15,
+	ymin = 0,
+	legend style={at={(0.5,1.05)},
+		anchor=north,legend columns=-1},
+	ylabel={Size in bits},
+	symbolic x coords={RLE-Gb, RLE-Ath, MTF-Ath, Benzid},
+	xtick=data,
+	]
+	%\addplot table [x=a, y=c, col sep=comma] {data.csv};
+	\addplot+[ybar, color=lime] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-header.csv};
+	\addplot+[ybar, color=teal] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-data.csv};
+	\addplot+[ybar, color=violet] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-dic.csv};
+	\legend{Header, Data, LUT}
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Performance of the techniques on a 1024x1024 image (airport)}
+	\label{fig:big}
+\end{figure}
+
+It appears that even in the small image, the best data compression is done with RLE-Ath. However, the overhead needed to decode the image is very important. The MTF-Ath only needs few bytes of dictionaries while using the powerful arithmetic coder, making it the most efficient technique. 
+
+When the size of the image increases, the size of the dictionaries becomes less significant with respect to the size of the compressed data. RLE-Ath is then the best performer.
