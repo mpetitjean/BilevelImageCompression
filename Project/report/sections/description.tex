@@ -13,12 +13,12 @@ The purpose of the MTF is to reduce the entropy of the image \cite{benzid}. It i
 
 \subsection{Two-Role Encoder (TRE)}
 
-The TRE is a variant of the RLE which is more suited when one symbol is more probable than the other \cite{benzid}, so that it is meant to be used after the MTF. Each non-zero element is shifted by 8 bits, while the sequence of zeros is simply encoded as the run length. To follow the previous example, the sequence $[1,0,0,1,0,0,0]$ would be encoded as $[256,2,256,3]$. Here, the assumption that no run length will exceed 256 is done. The stream can be decoded knowing that the beginning of a run is always greater than 255, while a run cannot be greater than 255.
+The TRE is a variant of the RLE which is more suited when one symbol is more probable than the other \cite{benzid}, so that it is meant to be used after the MTF. Each non-zero element is shifted by 8 bits, while the sequence of zeros is simply encoded as the run length. To follow the previous example, the sequence $[1,0,0,1,0,0,0]$ would be encoded as $[256,2,256,3]$. Here, the assumption that no run length will exceed 256 is done. The stream can be decoded knowing that a symbol that is repeated is encoded with a number greater than 255, while a run cannot be greater than 255.
 
 \subsection{Exp-Golomb coding}
 
-The Exp-Golomb coding is a variable length prefix code meant for entropy coding. The $i$\textsuperscript{th} is mapped to the binary representation of $i+1$, preceded by M zeros with $M=\left \lfloor{\log_2(i)}\right \rfloor $. When the short codewords are assigned to most probable symbols, compression can be achieved \cite{H264}.
+The Exp-Golomb coding is a variable length prefix code meant for entropy coding. The $i$\textsuperscript{th} symbol is mapped to the binary representation of $i+1$, preceded by M zeros with $M=\left \lfloor{\log_2(i)}\right \rfloor $. When the short codewords are assigned to most probable symbols, compression can be achieved \cite{H264}.
 
 \subsection{Arithmetic coding}
 
-An arithmetic encoder converts a sequence of data symbols into a single fractional number and can approach the optimal fractional number of bits required to represent each symbol. In general, it outperforms prefix codes \cite{H264}. An integer version of the coder was implemented to cope with finite precision problems. When the interval corresponding to the symbol stream becomes to small, some bits are already extracted and the interval is made wider again.
+An arithmetic encoder converts a sequence of data symbols into a single fractional number and can approach the optimal fractional number of bits required to represent each symbol. In general, it outperforms prefix codes \cite{H264}. An integer version of the coder was implemented to cope with finite precision problems. When the interval corresponding to the symbol stream becomes too small, some bits are already extracted and the interval is made wider again.
