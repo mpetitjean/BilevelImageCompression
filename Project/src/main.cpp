@@ -20,6 +20,22 @@
 
 //#define LENGTH_1D	256
 
+std::vector<unsigned char> transpose(std::vector<unsigned char> image, size_t imSize)
+{
+	for(size_t i = 0; i < imSize; ++i)
+	    for(size_t j = i+1; j < imSize; ++j)
+	        std::swap(image[imSize*i + j], image[imSize*j + i]);
+	return image;
+}
+
+std::vector<unsigned char> transpose(std::vector<unsigned char> image)
+{	size_t imSize = sqrt(image.size());
+	for(size_t i = 0; i < imSize; ++i)
+	    for(size_t j = i+1; j < imSize; ++j)
+	        std::swap(image[imSize*i + j], image[imSize*j + i]);
+	return image;
+}
+
 std::vector<unsigned char> shrinkColumnTo8bpp(std::vector<unsigned char> binaryImage)
 {	
 	/**
@@ -54,16 +70,16 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
     @param vector of 8-bit values
     @return vector only containing 1's or 0's
 	*/
-	int side = sqrt(shrinked.size()*8);
+	size_t side = sqrt(shrinked.size()*8);
 	std::vector<unsigned char> binaryImage(shrinked.size()*8);
 	std::bitset<8> res;
 	
-	for (int i = 0; i < side; ++i)
+	for (size_t i = 0; i < side; ++i)
 	{
-		for (int j = 0; j < side/8; ++j)
+		for (size_t j = 0; j < side/8; ++j)
 		{
 			res = shrinked[j*side + i];
-			for (int k = 0; k < 8; ++k)
+			for (size_t k = 0; k < 8; ++k)
 			{	
 				binaryImage[(j*8+k)*side + i] = res[7-k];
 			}
@@ -74,7 +90,7 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 	return binaryImage;
 }
 
-void decompress(std::string filename, size_t imSize)
+int decompress(std::string filename, size_t imSize)
 {
 	std::cout << "Starting decompression of " << filename << "..." << std::endl;
 
@@ -87,15 +103,17 @@ void decompress(std::string filename, size_t imSize)
 	
 	// Get compression method
 	std::string method = compressed.substr(0,2);
+	std::vector<unsigned char> result;
+	char transposed = compressed[2];
 	if (method == "10")
 	{
 		std::cout << "\nThe file was compressed using RLE+Arith." << std::endl;
 
 		// Parse file
-		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
-		std::string strRes = compressed.substr(2+32,sizedata);
-		int sizeDic = compressed.length() - 34 - sizedata;
-		std::string strDic = compressed.substr(2+32+sizedata,sizeDic);
+		int sizedata = (int)(std::stol(compressed.substr(3,32), nullptr, 2));
+		std::string strRes = compressed.substr(3+32,sizedata);
+		int sizeDic = compressed.length() - 35 - sizedata;
+		std::string strDic = compressed.substr(3+32+sizedata,sizeDic);
 
 		// Recover symbols and probabilities for decoding
 		std::map<unsigned int, unsigned int> dico;
@@ -107,25 +125,21 @@ void decompress(std::string filename, size_t imSize)
 		// Recreate probability intervals
 		uint size2;
 		std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size2);
-		std::vector<unsigned int> rtest = arithmeticDecoderInt(strRes, valmap, size2, 600); 		
+		std::vector<unsigned int> rtest = arithmeticDecoderInt(strRes, valmap, size2); 		
 		rtest.pop_back();
-		std::vector<unsigned char> result = decode_rle(rtest);
-
-		std::string name = filename.substr(0,filename.length()-4);
-		store(name + "_decompressed.raw", result);
-		std::cout << "Done." << std::endl;
+		result = decode_rle(rtest);
 	}
 	else if (method == "00")
 	{
 		std::cout << "\nThe file was compressed using M2F+Arith." << std::endl;
 
 		// Parse file
-		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
-		int sizeDicM2F = (int)(std::stol(compressed.substr(34,32), nullptr, 2));
-		int sizeDic = compressed.length() - (2+32+32) - sizedata - sizeDicM2F;
-		std::string strRes = compressed.substr(2+32+32,sizedata);
-		std::string strDicM2F = compressed.substr(2+32+sizedata,sizeDicM2F);
-		std::string strDic = compressed.substr(2+32+32+sizedata+sizeDicM2F,sizeDic);
+		int sizedata = (int)(std::stol(compressed.substr(3,32), nullptr, 2));
+		int sizeDicM2F = (int)(std::stol(compressed.substr(35,32), nullptr, 2));
+		int sizeDic = compressed.length() - (3+32+32) - sizedata - sizeDicM2F;
+		std::string strRes = compressed.substr(3+32+32,sizedata);
+		std::string strDicM2F = compressed.substr(3+32+sizedata,sizeDicM2F);
+		std::string strDic = compressed.substr(3+32+32+sizedata+sizeDicM2F,sizeDic);
 
 		// Recover symbols and probabilities for decoding
 		std::map<unsigned int, unsigned int> dico;
@@ -137,7 +151,7 @@ void decompress(std::string filename, size_t imSize)
 		// Recreate probability intervals and decode
 		uint size2;
 		std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size2);
-		std::vector<unsigned int> decodedInt = arithmeticDecoderInt(strRes, valmap, size2, 2); 
+		std::vector<unsigned int> decodedInt = arithmeticDecoderInt(strRes, valmap, size2); 
 		std::vector<unsigned char> decoded(decodedInt.begin(),decodedInt.end());
 		decoded.pop_back();
 		
@@ -148,24 +162,19 @@ void decompress(std::string filename, size_t imSize)
 			dictionnary_vec[i] = (unsigned int)(std::stol(strDicM2F.substr(i*8,8), nullptr, 2));
 		}
 		std::deque<unsigned char> dictionnary(dictionnary_vec.begin(), dictionnary_vec.end());
-		std::vector<unsigned char> result = iM2F(decoded, dictionnary);
-
-		// Store final result
-		std::string name = filename.substr(0,filename.length()-4);
-		store(name + "_decompressed.raw", result);
-		std::cout << "Done." << std::endl;
+		result = iM2F(decoded, dictionnary);		
 	}
 	else if (method == "01")
 	{
 		std::cout << "\nThe file was compressed using 8+M2F+TRE+Arith." << std::endl;
 
 		// Parse file
-		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
-		int sizeDicM2F = (int)(std::stol(compressed.substr(34,32), nullptr, 2));
-		int sizeDic = compressed.length() - (2+32+32) - sizedata - sizeDicM2F;
-		std::string strRes = compressed.substr(2+32+32,sizedata);
-		std::string strDicM2F = compressed.substr(2+32+sizedata,sizeDicM2F);
-		std::string strDic = compressed.substr(2+32+32+sizedata+sizeDicM2F,sizeDic);
+		int sizedata = (int)(std::stol(compressed.substr(3,32), nullptr, 2));
+		int sizeDicM2F = (int)(std::stol(compressed.substr(35,32), nullptr, 2));
+		int sizeDic = compressed.length() - (3+32+32) - sizedata - sizeDicM2F;
+		std::string strRes = compressed.substr(3+32+32,sizedata);
+		std::string strDicM2F = compressed.substr(3+32+sizedata,sizeDicM2F);
+		std::string strDic = compressed.substr(3+32+32+sizedata+sizeDicM2F,sizeDic);
 
 		// Recover symbols and probabilities for decoding
 		std::map<unsigned int, unsigned int> dico;
@@ -177,7 +186,7 @@ void decompress(std::string filename, size_t imSize)
 		// Recreate probability intervals and decode
 		uint size2;
 		std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size2);
-		std::vector<unsigned int> decodedInt = arithmeticDecoderInt(strRes, valmap, size2, 2); 
+		std::vector<unsigned int> decodedInt = arithmeticDecoderInt(strRes, valmap, size2); 
 		// std::vector<unsigned char> decoded(decodedInt.begin(),decodedInt.end());
 		decodedInt.pop_back();
 		
@@ -193,21 +202,17 @@ void decompress(std::string filename, size_t imSize)
 		std::vector<unsigned char> shrinked = iM2F(decoded, dictionnary);
 
 		// Expand
-		std::vector<unsigned char> result = ExpandColumnFrom8bpp(shrinked);
-		// Store final result
-		std::string name = filename.substr(0,filename.length()-4);
-		store(name + "_decompressed.raw", result);
-		std::cout << "Done." << std::endl;
+		result = ExpandColumnFrom8bpp(shrinked);
 	}
 	else if (method == "11")
 	{
 		std::cout << "\nThe file was compressed using RLE+ExpGolomb." << std::endl;
 
 		// Parse file
-		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
-		std::string strRes = compressed.substr(2+32,sizedata);
-		int sizeDic = compressed.length() - 34 - sizedata;
-		std::string strDic = compressed.substr(2+32+sizedata,sizeDic);
+		int sizedata = (int)(std::stol(compressed.substr(3,32), nullptr, 2));
+		std::string strRes = compressed.substr(3+32,sizedata);
+		int sizeDic = compressed.length() - 35 - sizedata;
+		std::string strDic = compressed.substr(3+32+sizedata,sizeDic);
 
 		// Recover LUT
 		std::vector<unsigned int> LUT;
@@ -222,17 +227,21 @@ void decompress(std::string filename, size_t imSize)
 		outfile << strRes;
 		outfile.close();
 		std::vector<uint> decoded = golomb("golombed.temp", sizedata, LUT);
-		std::vector<unsigned char> result = decode_rle(decoded);
-
-		std::string name = filename.substr(0,filename.length()-4);
-		store(name + "_decompressed.raw", result);
-		std::cout << "Done." << std::endl;
+		result = decode_rle(decoded);
 	}
 	else
+	{
 		std::cerr << "Compression method unrecognized." << std::endl;
+		return 3;
+	}
+	// If fine, store the result
+	std::string name = filename.substr(0,filename.length()-4);
+	store(name + "_decompressed.raw", transposed=='0' ? result : transpose(result));
+	std::cout << "Done." << std::endl;
+	return 0;
 }
 
-std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize)
+std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
 	// RLE Encoding
 	std::vector<unsigned int> run_length = encode_rle(image);
@@ -255,8 +264,8 @@ std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize)
 
 	// Generate header for the file	
 	std::string header = "10"; //0b10 = 2 means RLE+arith 
+	header += transposed;
 	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
-
 	// Concatenation
 	std::string compressed = header + res + dic;
 	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
@@ -271,7 +280,7 @@ std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize)
  	return compressed;
 }
 
-std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize)
+std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
 	// Perform M2F transform
 	std::set<unsigned char> dictionnary_set(begin(image), end(image));
@@ -302,10 +311,10 @@ std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize)
 	}
 
 	// Generate header for the file	
-	std::string header = "00"; //0b00 = 0 means M2F+arith 
+	std::string header = "00"; //0b00 = 0 means M2F+arith
+	header += transposed;
 	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
 	header += std::bitset<sizeof(uint)*8>(dicM2F.length()).to_string();
-
 	// Concatenation
 	std::string compressed = header + res + dicM2F + dic;
 	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
@@ -320,7 +329,7 @@ std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize)
  	return compressed;
 }
 
-std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize)
+std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
 	// Perform shrink
 	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
@@ -353,10 +362,10 @@ std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize)
 	}
 
 	// Generate header for the file	
-	std::string header = "01"; //0b01 = 1 means 8+M2F+TRE+arith 
+	std::string header = "01"; //0b01 = 1 means 8+M2F+TRE+arith
+	header += transposed;
 	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
 	header += std::bitset<sizeof(uint)*8>(dicM2F.length()).to_string();
-
 	// Concatenation
 	std::string compressed = header + res + dicM2F + dic;
 	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
@@ -372,7 +381,7 @@ std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize)
 }
 
 
-std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize)
+std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
 	// RLE Encoding
 	std::vector<unsigned int> run_length = encode_rle(image);
@@ -383,9 +392,9 @@ std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize)
 	std::string res = golomb(run_length, LUT);
 
 	// Generate header for the file	
-	std::string header = "11"; //0b11 = 3 means RLE+golomb 
+	std::string header = "11"; //0b11 = 3 means RLE+golomb
+	header += transposed;
 	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
-
 	// Encode LUT
 	std::string dic;
 	for (auto val : LUT)
@@ -415,17 +424,24 @@ void compress(std::string filename, size_t imSize)
 	std::vector<float> imagefloat(imSize*imSize);
 	load(filename, imagefloat);
 	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
+	std::vector<unsigned char> imageT = transpose(image, imSize);
 
 	// Test several encoding schemes
-	std::string RLEAthEncoded = encodeRLEAth(image, imSize);
-	std::string M2FAthEncoded = encodeM2FAth(image, imSize);
-	std::string RLEGbEncoded = encodeRLEGb(image, imSize);
-	std::string M2FTREAthEncoded = encode8M2FTREAth(image, imSize);
+	std::string RLEAthEncoded = encodeRLEAth(image, imSize, '0');
+	std::string M2FAthEncoded = encodeM2FAth(image, imSize, '0');
+	std::string RLEGbEncoded = encodeRLEGb(image, imSize, '0');
+	std::string M2FTREAthEncoded = encode8M2FTREAth(image, imSize, '0');
 
+	// Same but transposed
+	std::cout << "Trying with its transposed version" << "..." << std::endl << std::endl;
+	std::string RLEAthEncodedT = encodeRLEAth(imageT, imSize, '1');
+	std::string M2FAthEncodedT = encodeM2FAth(imageT, imSize, '1');
+	std::string RLEGbEncodedT = encodeRLEGb(imageT, imSize, '1');
+	std::string M2FTREAthEncodedT = encode8M2FTREAth(imageT, imSize, '1');
 	// Select best performance
 	size_t min = -1;
 	int minInd = 0;
-	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded,M2FTREAthEncoded};
+	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded,M2FTREAthEncoded,RLEAthEncodedT, M2FAthEncodedT, RLEGbEncodedT,M2FTREAthEncodedT};
 	for (size_t i = 0; i < vecMeth.size(); ++i)
 	 {
 	 	if (vecMeth[i].size() < min)
@@ -447,7 +463,6 @@ void compress(std::string filename, size_t imSize)
 
 int main(int argc, char* argv[])
 {
-
 	if (argc < 4)
 	{
 		std::cerr << "Error using " << argv[0] << ". Correct usage is " << argv[0] << " COMPRESS/DECOMPRESS IMAGE_NAME SIZE" << std::endl;
@@ -465,8 +480,8 @@ int main(int argc, char* argv[])
 	{
 		size_t arg;
 		std::stringstream (argv[3])>> arg;
-		decompress(argv[2], arg);
-		return 0;
+		return decompress(argv[2], arg);
+		
 	}	
 	else
 	{
