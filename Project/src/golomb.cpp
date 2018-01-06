@@ -120,11 +120,9 @@ std::vector<unsigned int> createLUT(std::vector<unsigned int> occurences, std::v
 	size_t size = std::unique(begin(input), end(input)) - begin(input);
 	std::vector<unsigned int> idx(occurences.size());
 	iota(idx.begin(), idx.end(), 0);
-
 	// sort indexes based on comparing values in occurences
-	sort(idx.begin(), idx.end(),
-	   [occurences](uint i1, uint i2) {return occurences[i1] > occurences[i2];});
-
+	std::sort(idx.begin(), idx.end(),
+	   [&occurences](uint const& i1, uint const& i2) {return occurences[i1] > occurences[i2];});
 	std::vector<uint> LUT(size);
 
 	// Fill LUT
