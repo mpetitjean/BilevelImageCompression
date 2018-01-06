@@ -4,9 +4,9 @@
 #include <set>
 #include <deque>
 #include <sstream>
+#include <map>
 #include "io.hpp"
 #include "rle.hpp"
-#include <map>
 #include "arithmetic.hpp"
 #include "golomb.hpp"
 #include "tre.hpp"
@@ -15,7 +15,6 @@
 // #include <fstream>
 // #include <vector>
 // #include <numeric>
-#include <map>
 // #include <stdio.h>
 // #include <gmp.h>
 
@@ -355,7 +354,7 @@ int main(int argc, char* argv[])
 
 	if (argc < 4)
 	{
-		std::cerr << "Error using " << argv[0] << ". Correct usage is " << argv[0] << "COMPRESS/DECOMPRESS IMAGE_NAME SIZE" << std::endl;
+		std::cerr << "Error using " << argv[0] << ". Correct usage is " << argv[0] << " COMPRESS/DECOMPRESS IMAGE_NAME SIZE" << std::endl;
 		return 1;
 	}
 
