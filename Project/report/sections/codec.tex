@@ -1,0 +1,15 @@
+\section{Compression schemes}
+
+Various combinations of the previously detailed techniques are implemented in the codec. The encoder will try for all possible techniques and write to file the most advantageous method. They are listed here:
+
+\begin{itemize}
+	\item \textbf{RLE-Gb}: the image is RLE-encoded then compressed with Exp-Golomb. A LUT also needs to be transmitted to allow the mapping of shortest codewords to most probable symbols. Two variants are possible, which are the scanning of the image in horizontal or vertical order. 
+	
+	\item \textbf{RLE-Ath}: same process as RLE-Gb but the Golomb code is replaced by the arithmetic encoder. The symbols and their probabilities also need to be transmitted in a LUT.
+	
+	\item \textbf{M2F-Ath}: the image is transformed using the M2F and then is compressed by the arithmetic encoder. The dictionnary of the M2F and the probabilities for the arithmetic coder need to be added to the file.
+	
+	\item \textbf{Benzid}: the method is the one proposed in \cite{benzid}. The image is vertically shrinked to reach 8bpp, is transformed using the M2F, TRE and compressed using the arithmetic coder.
+\end{itemize}
+
+In the compressed file, a 3-bits flag identifies the chosen method. For some of them, additional size information is also needed to correctly parse the file while decoding.

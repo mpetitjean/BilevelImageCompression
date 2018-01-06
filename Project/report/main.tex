@@ -1,5 +1,6 @@
 % !TeX spellcheck = en_US
-\documentclass[12pt,english]{article}
+%\documentclass[12pt,english]{article}
+\documentclass[conference,english, 11pt,a4paper]{IEEEtran}
 
 % Packages
 \usepackage[utf8]{inputenc}
@@ -16,6 +17,7 @@
 }
 \usepackage{babel}
 \usepackage{lmodern}
+\usepackage[backend=bibtex,style=numeric,sorting=none]{biblatex}
 \usepackage{float}
 \usepackage{tikz}
 \usepackage{caption}
@@ -32,57 +34,87 @@
 	\protected@edef\x{\endgroup\si{#2}}\x
 }
 %\usepackage{charter}
-\renewcommand{\baselinestretch}{1.1} 
-\setlength{\parindent}{0em}
-\setlength{\parskip}{.5em}
+%\renewcommand{\baselinestretch}{1.1} 
+%\setlength{\parindent}{0em}
+%\setlength{\parskip}{.5em}
 
 % Document
-\begin{document}
-\pagenumbering{gobble}
 
-\begin{titlepage}
-	{\setstretch{1.0}
-		
-		\includegraphics[width=\textwidth]{img/Logos.pdf} \hspace{4.5cm}
-		
-		\vspace{1 cm}
-		\large
-		
-		\begin{tabular}{lr}
-			\begin{minipage}[t]{0.5\textwidth}
-				{\small\textsc{Brussels Faculty of Enginering} \\
-					Université Libre de Bruxelles\\
-					Vrije Universiteit van Brussel\\}
-			\end{minipage} & \begin{minipage}[t]{0.45\textwidth}
-				\begin{flushright}
-					{\small Academic Year 2017-2018}
-				\end{flushright}
-			\end{minipage}
-		\end{tabular}
-		
-		\vspace{2cm}
-		\begin{center}
-			\Large 
-			\textbf{Lossless Bilevel Image Compression} \\Project report\\
-			\large 
-			\vspace*{2cm}
-			Cedric Hannotier \& Mathieu Petitjean\\
-		\end{center}
-		
-		
-		\vspace{\stretch{2}}
-		
-		\begin{minipage}[t]{\textwidth}
-			\normalsize \textbf{INFO-Y093}: Image and Video Technology\\
-		\end{minipage}
-	}
+\addbibresource{sources.bib}
+\begin{document}
 	
-\end{titlepage}
+\title{Lossles compression of bilevel images}
+
+\author{\IEEEauthorblockN{Cédric Hannotier}
+	\IEEEauthorblockA{\href{mailto:channoti@ulb.ac.be}{channoti@ulb.ac.be}}
+	\and
+	\IEEEauthorblockN{Mathieu Petitjean}
+	\IEEEauthorblockA{\href{mailto:mpetitje@ulb.ac.be}{mpetitje@ulb.ac.be}}}
+
+% make the title area
+\maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
+
+
+\begin{abstract}
+	Compression babyyy
+\end{abstract}
+
+\begin{IEEEkeywords}
+	compression, jpp 
+\end{IEEEkeywords}
+
+\IEEEpeerreviewmaketitle
+
+
+%\pagenumbering{gobble}
+%
+%\begin{titlepage}
+%	{\setstretch{1.0}
+%		
+%		\includegraphics[width=\textwidth]{img/Logos.pdf} \hspace{4.5cm}
+%		
+%		\vspace{1 cm}
+%		\large
+%		
+%		\begin{tabular}{lr}
+%			\begin{minipage}[t]{0.5\textwidth}
+%				{\small\textsc{Brussels Faculty of Enginering} \\
+%					Université Libre de Bruxelles\\
+%					Vrije Universiteit van Brussel\\}
+%			\end{minipage} & \begin{minipage}[t]{0.45\textwidth}
+%				\begin{flushright}
+%					{\small Academic Year 2017-2018}
+%				\end{flushright}
+%			\end{minipage}
+%		\end{tabular}
+%		
+%		\vspace{2cm}
+%		\begin{center}
+%			\Large 
+%			\textbf{Lossless Bilevel Image Compression} \\Project report\\
+%			\large 
+%			\vspace*{2cm}
+%			Cedric Hannotier \& Mathieu Petitjean\\
+%		\end{center}
+%		
+%		
+%		\vspace{\stretch{2}}
+%		
+%		\begin{minipage}[t]{\textwidth}
+%			\normalsize \textbf{INFO-Y093}: Image and Video Technology\\
+%		\end{minipage}
+%	}
+%	
+%\end{titlepage}
 
 \input{sections/intro}
 \input{sections/description}
+\input{sections/codec}
 \input{sections/performance}
 \input{sections/ccl}
 
+\printbibliography
 
 \end{document}
