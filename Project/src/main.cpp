@@ -28,22 +28,20 @@ std::vector<unsigned char> shrinkColumnTo8bpp(std::vector<unsigned char> binaryI
     @param vector only containing 1's or 0's
     @return a smaller vector of 8-bit values corresponding to a column-wise shrink
 	*/
-	int side = sqrt(binaryImage.size());
+	size_t side = sqrt(binaryImage.size());
 	std::vector<unsigned char> shrinked(binaryImage.size()/8);
-	
-	for (int i = 0; i < side; ++i)
+	for (size_t i = 0; i < side; ++i)
 	{
-		for (int j = 0; j < side; j += 8)
+		for (size_t j = 0; j < side; j += 8)
 		{
 			unsigned char res = 0;
-			for (int k = 0; k < 8; ++k)
+			for (size_t k = 0; k < 8; ++k)
 			{
 				res += (binaryImage[(j+k)*side + i] << (7-k));
 			}
 			shrinked[j/8*side + i] = res;
 		}
 	}
-
 	return shrinked;
 }
 
@@ -76,7 +74,7 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 	return binaryImage;
 }
 
-void decompress(std::string filename, int imSize)
+void decompress(std::string filename, size_t imSize)
 {
 	std::cout << "Starting decompression of " << filename << "..." << std::endl;
 
@@ -157,6 +155,50 @@ void decompress(std::string filename, int imSize)
 		store(name + "_decompressed.raw", result);
 		std::cout << "Done." << std::endl;
 	}
+	else if (method == "01")
+	{
+		std::cout << "\nThe file was compressed using 8+M2F+TRE+Arith." << std::endl;
+
+		// Parse file
+		int sizedata = (int)(std::stol(compressed.substr(2,32), nullptr, 2));
+		int sizeDicM2F = (int)(std::stol(compressed.substr(34,32), nullptr, 2));
+		int sizeDic = compressed.length() - (2+32+32) - sizedata - sizeDicM2F;
+		std::string strRes = compressed.substr(2+32+32,sizedata);
+		std::string strDicM2F = compressed.substr(2+32+sizedata,sizeDicM2F);
+		std::string strDic = compressed.substr(2+32+32+sizedata+sizeDicM2F,sizeDic);
+
+		// Recover symbols and probabilities for decoding
+		std::map<unsigned int, unsigned int> dico;
+		for (int i = 0; i < sizeDic; i+=64)
+		{
+			dico[(uint)(std::stol(strDic.substr(i,32), nullptr, 2))] = (uint)(std::stol(strDic.substr(i+32,32), nullptr, 2));
+		}
+
+		// Recreate probability intervals and decode
+		uint size2;
+		std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size2);
+		std::vector<unsigned int> decodedInt = arithmeticDecoderInt(strRes, valmap, size2, 2); 
+		// std::vector<unsigned char> decoded(decodedInt.begin(),decodedInt.end());
+		decodedInt.pop_back();
+		
+		// Invert TRE
+		std::vector<unsigned char> decoded = iTRE(decodedInt);
+		// Recover M2F dictionnary and decode
+		std::vector<unsigned int> dictionnary_vec(sizeDicM2F/8);
+		for (int i = 0; i < sizeDicM2F/8; i++)
+		{	
+			dictionnary_vec[i] = (unsigned int)(std::stol(strDicM2F.substr(i*8,8), nullptr, 2));
+		}
+		std::deque<unsigned char> dictionnary(dictionnary_vec.begin(), dictionnary_vec.end());
+		std::vector<unsigned char> shrinked = iM2F(decoded, dictionnary);
+
+		// Expand
+		std::vector<unsigned char> result = ExpandColumnFrom8bpp(shrinked);
+		// Store final result
+		std::string name = filename.substr(0,filename.length()-4);
+		store(name + "_decompressed.raw", result);
+		std::cout << "Done." << std::endl;
+	}
 	else if (method == "11")
 	{
 		std::cout << "\nThe file was compressed using RLE+ExpGolomb." << std::endl;
@@ -190,11 +232,11 @@ void decompress(std::string filename, int imSize)
 		std::cerr << "Compression method unrecognized." << std::endl;
 }
 
-std::string encodeRLEAth(std::vector<unsigned char> image, int imSize)
+std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize)
 {
 	// RLE Encoding
 	std::vector<unsigned int> run_length = encode_rle(image);
-	run_length.push_back(600);
+	run_length.push_back(-1);
 
 	// Perform arithmetic encoding
 	std::map<unsigned int, unsigned int> dico = probabilityInt(run_length);
@@ -229,13 +271,13 @@ std::string encodeRLEAth(std::vector<unsigned char> image, int imSize)
  	return compressed;
 }
 
-std::string encodeM2FAth(std::vector<unsigned char> image, int imSize)
+std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize)
 {
 	// Perform M2F transform
 	std::set<unsigned char> dictionnary_set(begin(image), end(image));
 	std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
 	std::vector<unsigned char> transformed = M2F(image, dictionnary);
-	transformed.push_back(2);
+	transformed.push_back(-1);
 
 	// Perform arithmetic encoding
 	std::vector<unsigned int> transformedInt(transformed.begin(), transformed.end());
@@ -278,7 +320,59 @@ std::string encodeM2FAth(std::vector<unsigned char> image, int imSize)
  	return compressed;
 }
 
-std::string encodeRLEGb(std::vector<unsigned char> image, int imSize)
+std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize)
+{
+	// Perform shrink
+	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
+	// Perform M2F transform
+	std::set<unsigned char> dictionnary_set(begin(shrinked), end(shrinked));
+	std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
+	std::vector<unsigned char> transformed = M2F(shrinked, dictionnary);
+	transformed.push_back(-1);
+
+	// Perform arithmetic encoding
+	std::vector<unsigned int> transformedInt(transformed.begin(), transformed.end());
+	std::map<unsigned int, unsigned int> dico = probabilityInt(transformedInt);
+
+	uint size;
+	std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size);
+	std::string res = arithmeticEncoderInt(valmap, transformedInt, size);
+
+	// Encode symbols and their prob
+	std::string dic;
+	for (auto val : dico)
+	{
+		dic += std::bitset<sizeof(uint)*8>(val.first).to_string();
+		dic += std::bitset<sizeof(uint)*8>(val.second).to_string();
+	}
+	// Encode M2F dictionnary
+	std::string dicM2F;
+	for (auto val : dictionnary)
+	{
+		dicM2F += std::bitset<sizeof(char)*8>(val).to_string();
+	}
+
+	// Generate header for the file	
+	std::string header = "01"; //0b01 = 1 means 8+M2F+TRE+arith 
+	header += std::bitset<sizeof(uint)*8>(res.length()).to_string();
+	header += std::bitset<sizeof(uint)*8>(dicM2F.length()).to_string();
+
+	// Concatenation
+	std::string compressed = header + res + dicM2F + dic;
+	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
+
+	std::cout << "Testing M2F + TRE + with Arithmetic Coder:"  << std::endl;
+	std::cout << "Total size = "  << compressed.length() <<  " bits. ";
+	std::cout << "Compression ratio is " << ratio << "." << std::endl;
+ 	std::cout << "Header = " << header.length() <<  " bits" << std::endl;
+ 	std::cout << "Data = " << res.length() <<  " bits" << std::endl;
+ 	std::cout << "Dictionnaries = " << dic.length() + dicM2F.length() <<  " bits" << std::endl << std::endl;
+
+ 	return compressed;
+}
+
+
+std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize)
 {
 	// RLE Encoding
 	std::vector<unsigned int> run_length = encode_rle(image);
@@ -313,7 +407,7 @@ std::string encodeRLEGb(std::vector<unsigned char> image, int imSize)
  	return compressed;
 }
 
-void compress(std::string filename, int imSize)
+void compress(std::string filename, size_t imSize)
 {
 	std::cout << "Starting compression of " << filename << "..." << std::endl << std::endl;
 
@@ -326,12 +420,13 @@ void compress(std::string filename, int imSize)
 	std::string RLEAthEncoded = encodeRLEAth(image, imSize);
 	std::string M2FAthEncoded = encodeM2FAth(image, imSize);
 	std::string RLEGbEncoded = encodeRLEGb(image, imSize);
+	std::string M2FTREAthEncoded = encode8M2FTREAth(image, imSize);
 
 	// Select best performance
-	unsigned int min = -1;
-	int minInd;
-	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded};
-	for (int i = 0; i < 3; ++i)
+	size_t min = -1;
+	int minInd = 0;
+	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded,M2FTREAthEncoded};
+	for (size_t i = 0; i < vecMeth.size(); ++i)
 	 {
 	 	if (vecMeth[i].size() < min)
 	 	{
@@ -343,6 +438,7 @@ void compress(std::string filename, int imSize)
 	
 	// Write to file
 	std::string name = filename.substr(0,filename.length()-4);
+	std::cout << "Output: " + name + ".jpp\n"<< minInd << std::endl;
 	std::ofstream outfile (name + ".jpp");
 	outfile << compressed;
 	outfile.close();
@@ -358,29 +454,33 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if(strcmp(argv[1],"COMPRESS") == 0)
+	else if(strcmp(argv[1],"COMPRESS") == 0)
 	{
-		compress(argv[2], std::stoi(argv[3]));
+		size_t arg;
+		std::stringstream (argv[3])>> arg;
+		compress(argv[2], arg);
 		return 0;
 	}
 	else if(strcmp(argv[1],"DECOMPRESS") == 0)
 	{
-		decompress(argv[2], std::stoi(argv[3]));
+		size_t arg;
+		std::stringstream (argv[3])>> arg;
+		decompress(argv[2], arg);
 		return 0;
 	}	
 	else
 	{
 		std::cerr << "Error using " << argv[0] << ". Unknown second argument, should be COMPRESS or DECOMPRESS" << std::endl;		
-		return 1;
+		return 2;
 	}
 
-	std::vector<float> imagefloat(256*256);
+	// std::vector<float> imagefloat(256*256);
 	// load("airport_1024x1024.raw", imagefloat);
 	// load("baboon_512x512.raw", imagefloat);
-	load("earth_binary_256x256.raw", imagefloat);
+	// load("earth_binary_256x256.raw", imagefloat);
 	// load("house_256x256.raw", imagefloat);
 	// load("lena_binary_dithered_256x256.raw", imagefloat);
-	std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
+	// std::vector<unsigned char> image(imagefloat.begin(), imagefloat.end());
 	
 	
 	//1) Shrink image in column
@@ -392,52 +492,52 @@ int main(int argc, char* argv[])
 	// std::vector<unsigned char> coeff = M2F(shrinked, dictionnary);
 
 	// std::vector<unsigned int> run_length = TRE(coeff);
-	std::vector<unsigned int> run_length = encode_rle(image);
+// 	std::vector<unsigned int> run_length = encode_rle(image);
 
-	run_length.push_back(600);
+// 	run_length.push_back(600);
 
-	std::ofstream outfile ("tre.raw");
-	// mp_exp_t exp; 
-	for (auto value : run_length)
-	outfile << value << std::endl;
-	outfile.close();
-
-
-	std::map<unsigned int, unsigned int> dico = probabilityInt(run_length);
-	uint size;
-	std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size);
-	std::string res = arithmeticEncoderInt(valmap, run_length, size);
-	// std::vector<unsigned int> occ = nbOccurences(run_length);
-	// std::vector<unsigned int> LUT = createLUT(occ);
-	// std::string res = golomb(run_length, LUT);
-
-	// std::cout << "Encoded image = " << res << std::endl;
-	outfile.open("compressed.raw");
-	// mp_exp_t exp; 
-	outfile << res;
-	outfile.close();
-
-	std::vector<unsigned int> rtest = arithmeticDecoderInt(res, valmap, size, 600); 		
-	// std::vector<uint> rtest = golomb("compressed.raw", res.size());
-	// std::cout << (rtest == run_length) << std::endl;
-	outfile.open("resss.raw");
-	// mp_exp_t exp; 
-	for (auto i = 0; i < rtest.size(); ++i)
-	outfile << run_length.at(i) << " " << rtest.at(i) << std::endl;
-	// outfile << res.get_str(exp, 2) << "e" << exp;std::bitset<8>((char)exp);
+// 	std::ofstream outfile ("tre.raw");
+// 	// mp_exp_t exp; 
+// 	for (auto value : run_length)
+// 	outfile << value << std::endl;
+// 	outfile.close();
 
 
-	// std::cout << exp << std::endl;
-	outfile.close();
-	rtest.pop_back();
-	std::vector<unsigned char> result = decode_rle(rtest);
-	// std::vector<unsigned char> coeff2 = iTRE(rtest);
-	// std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
-	// std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
-	std::cout << (result == image) << std::endl;
+// 	std::map<unsigned int, unsigned int> dico = probabilityInt(run_length);
+// 	uint size;
+// 	std::map<unsigned int, std::pair<uint, uint>> valmap = createIntervalsInt(dico, size);
+// 	std::string res = arithmeticEncoderInt(valmap, run_length, size);
+// 	// std::vector<unsigned int> occ = nbOccurences(run_length);
+// 	// std::vector<unsigned int> LUT = createLUT(occ);
+// 	// std::string res = golomb(run_length, LUT);
 
-	store("result.raw", result);
+// 	// std::cout << "Encoded image = " << res << std::endl;
+// 	outfile.open("compressed.raw");
+// 	// mp_exp_t exp; 
+// 	outfile << res;
+// 	outfile.close();
+
+// 	std::vector<unsigned int> rtest = arithmeticDecoderInt(res, valmap, size, 600); 		
+// 	// std::vector<uint> rtest = golomb("compressed.raw", res.size());
+// 	// std::cout << (rtest == run_length) << std::endl;
+// 	outfile.open("resss.raw");
+// 	// mp_exp_t exp; 
+// 	for (auto i = 0; i < rtest.size(); ++i)
+// 	outfile << run_length.at(i) << " " << rtest.at(i) << std::endl;
+// 	// outfile << res.get_str(exp, 2) << "e" << exp;std::bitset<8>((char)exp);
 
 
-	return 0;
+// 	// std::cout << exp << std::endl;
+// 	outfile.close();
+// 	rtest.pop_back();
+// 	std::vector<unsigned char> result = decode_rle(rtest);
+// 	// std::vector<unsigned char> coeff2 = iTRE(rtest);
+// 	// std::vector<unsigned char> resolve = iM2F(coeff2, dictionnary);
+// 	// std::vector<unsigned char> result = ExpandColumnFrom8bpp(resolve);
+// 	std::cout << (result == image) << std::endl;
+
+// 	store("result.raw", result);
+
+
+// 	return 0;
 }
