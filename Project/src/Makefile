@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -pedantic -std=c++14
 SUFFIXES = .cpp .o
 .SUFFIXES: $(SUFFIXES) .
 
-PROG = main
+PROG = convert
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 

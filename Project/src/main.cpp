@@ -11,17 +11,16 @@
 #include "golomb.hpp"
 #include "tre.hpp"
 #include "m2f.hpp"
-// #include <iostream>
-// #include <fstream>
-// #include <vector>
-// #include <numeric>
-// #include <stdio.h>
-// #include <gmp.h>
-
-//#define LENGTH_1D	256
 
 std::vector<unsigned char> transpose(std::vector<unsigned char> image, size_t imSize)
 {
+	/**
+	Transpose a 2D vector represented as a 1D vector in raster order
+
+    @param	the 1D image vector
+    		size of the image
+	@return the transposed image
+	*/
 	for(size_t i = 0; i < imSize; ++i)
 	    for(size_t j = i+1; j < imSize; ++j)
 	        std::swap(image[imSize*i + j], image[imSize*j + i]);
@@ -29,7 +28,14 @@ std::vector<unsigned char> transpose(std::vector<unsigned char> image, size_t im
 }
 
 std::vector<unsigned char> transpose(std::vector<unsigned char> image)
-{	size_t imSize = sqrt(image.size());
+{	
+	/**
+	Transpose a 2D vector represented as a 1D vector in raster order
+
+    @param	the 1D image vector
+	@return the transposed image
+	*/
+	size_t imSize = sqrt(image.size());
 	for(size_t i = 0; i < imSize; ++i)
 	    for(size_t j = i+1; j < imSize; ++j)
 	        std::swap(image[imSize*i + j], image[imSize*j + i]);
@@ -92,6 +98,12 @@ std::vector<unsigned char> ExpandColumnFrom8bpp(std::vector<unsigned char> shrin
 
 int decompress(std::string filename)
 {
+	/**
+	Decompresses the .jpp file depending on the method flag.
+
+    @param	name of the file to be decompressed
+	@return the decoded image
+	*/
 	std::cout << "Starting decompression of " << filename << "..." << std::endl;
 
 	// Open input file
@@ -166,7 +178,7 @@ int decompress(std::string filename)
 	}
 	else if (method == "01")
 	{
-		std::cout << "\nThe file was compressed using 8 + M2F + TRE + Arith." << std::endl;
+		std::cout << "\nThe file was compressed using Benzid." << std::endl;
 
 		uint32_t sizedata = (uint32_t)(std::stol(compressed.substr(3,32), nullptr, 2));
 		uint32_t sizeDicM2F = (uint32_t)(std::stol(compressed.substr(35,32), nullptr, 2));
@@ -238,6 +250,15 @@ int decompress(std::string filename)
 
 std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
+	/**
+	Encodes an image with the RLE-Ath technique, ie RLE then arithmetic coding
+
+    @param	the 1D image vector
+    		size of the image
+    		flag indicating the scanning order
+	@return the encoded image as a string
+	*/
+
 	// RLE Encoding
 	std::vector<uint32_t> run_length = encode_rle(image);
 	run_length.push_back(-1);
@@ -277,6 +298,15 @@ std::string encodeRLEAth(std::vector<unsigned char> image, size_t imSize, char t
 
 std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
+	/**
+	Encodes an image with the MTF-Ath technique, ie MTF then arithmetic coding
+
+    @param	the 1D image vector
+    		size of the image
+    		flag indicating the scanning order
+	@return the encoded image as a string
+	*/
+
 	// Perform M2F transform
 	std::set<unsigned char> dictionnary_set(begin(image), end(image));
 	std::deque<unsigned char> dictionnary(dictionnary_set.begin(), dictionnary_set.end());
@@ -326,6 +356,15 @@ std::string encodeM2FAth(std::vector<unsigned char> image, size_t imSize, char t
 
 std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
+	/**
+	Encodes an image with the benzid technique, ie shrink, then MTF, then TRE, then arithmetic coding
+
+    @param	the 1D image vector
+    		size of the image
+    		flag indicating the scanning order
+	@return the encoded image as a string
+	*/
+
 	std::vector<unsigned char> shrinked = shrinkColumnTo8bpp(image);
 	// Perform M2F transform
 	std::set<unsigned char> dictionnary_set(begin(shrinked), end(shrinked));
@@ -367,7 +406,7 @@ std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize, ch
 	std::string compressed = header + res + dicM2F + dic;
 	float ratio = ((float) imSize)*((float) imSize)/((float) compressed.length());	
 
-	std::cout << "Testing 8 + M2F + TRE + with Arithmetic Coder:"  << std::endl;
+	std::cout << "Testing Benzid:"  << std::endl;
 	std::cout << "Total size = "  << compressed.length() <<  " bits. ";
 	std::cout << "Compression ratio is " << ratio << "." << std::endl;
  	std::cout << "Header = " << header.length() <<  " bits" << std::endl;
@@ -380,6 +419,15 @@ std::string encode8M2FTREAth(std::vector<unsigned char> image, size_t imSize, ch
 
 std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize, char transposed)
 {
+	/**
+	Encodes an image with the RLE-Gb technique, ie RLE then Exp-Golomb coding
+
+    @param	the 1D image vector
+    		size of the image
+    		flag indicating the scanning order
+	@return the encoded image as a string
+	*/
+
 	// RLE Encoding
 	std::vector<uint32_t> run_length = encode_rle(image);
 
@@ -415,8 +463,15 @@ std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize, char tr
 
 void compress(std::string filename)
 {
+	/**
+	Tries for all supported compression methods, then compresses the input image in a jpp file
+	with the best method.
+
+    @param	image filename
+	*/
+
 	std::cout << std::endl << "Starting compression of " << filename << "..." << std::endl << std::endl;
-	std::cout << "Trying a horizontal scanning order..." << std::endl;
+	std::cout << "Trying a horizontal scanning order..." << std::endl << std::endl;
 
 	// Load image and convert to chars
 	std::vector<float> imagefloat = load<float>(filename);
@@ -431,7 +486,7 @@ void compress(std::string filename)
 	std::string M2FTREAthEncoded = encode8M2FTREAth(image, imSize, '0');
 
 	// Same but transposed
-	std::cout << "Trying a vertical scanning order..." << std::endl;
+	std::cout << "Trying a vertical scanning order..." << std::endl << std::endl;
 	std::string RLEAthEncodedT = encodeRLEAth(imageT, imSize, '1');
 	std::string M2FAthEncodedT = encodeM2FAth(imageT, imSize, '1');
 	std::string RLEGbEncodedT = encodeRLEGb(imageT, imSize, '1');
@@ -489,25 +544,27 @@ void compress(std::string filename)
 	outfile.close();
 }
 
-
 int main(int argc, char* argv[])
-{
+{	
+	// We need 1 argument only
 	if (argc < 2)
 	{
 		std::cerr << "Error using " << argv[0] << ". Correct usage is " << argv[0] << " IMAGE_NAME(.raw/.jpp)" << std::endl;
 		return 1;
 	}
-
+	// If extension is raw, compress
 	else if(std::string(argv[1]).substr(std::string(argv[1]).length()-4) == ".raw")
 	{
 		compress(argv[1]);
 		return 0;
 	}
+	// If extension is jpp, decompress
 	else if(std::string(argv[1]).substr(std::string(argv[1]).length()-4) == ".jpp")
 	{
 		return decompress(argv[1]);
 		
 	}
+	// help message
 	else if (std::string(argv[1]) == "help")
 	{
 		std::cout << std::endl << "This is a bilevel image compressor. To use it, type:" << std::endl;
