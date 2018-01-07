@@ -5,7 +5,7 @@
 #include <climits>
 #include "golomb.hpp"
 
-std::string golomb(std::vector<unsigned int> stream)
+std::string golomb(std::vector<uint32_t> stream)
 {
 	/**
    	Converts a vector of integers to a string of its Golomb codes
@@ -20,8 +20,9 @@ std::string golomb(std::vector<unsigned int> stream)
 	return output;
 }
 
-std::string golomb(std::vector<unsigned int> stream, std::vector<uint> LUT)
-{	
+
+std::string golomb(std::vector<uint32_t> stream, std::vector<uint32_t> LUT)
+{
 	/**
    	Converts a vector of integers to a string of its Golomb codes, taking into account a LUT that
    	maps the shortest codewords to most probable symbols. See the createLUT function.
@@ -32,11 +33,11 @@ std::string golomb(std::vector<unsigned int> stream, std::vector<uint> LUT)
 	*/
 	std::string output;
 	std::for_each(stream.begin(), stream.end(),
-		[LUT, &output](uint value){output += golomb(std::distance(LUT.begin(), std::find(LUT.begin(), LUT.end(), value)));});
+		[LUT, &output](uint32_t value){output += golomb(std::distance(LUT.begin(), std::find(LUT.begin(), LUT.end(), value)));});
 	return output;
 }
 
-std::string golomb(uint value)
+std::string golomb(uint32_t value)
 {
 	/**
    	Converts an unisgned integer to a string of its Golomb code
@@ -50,7 +51,7 @@ std::string golomb(uint value)
 	return buffer;
 }
 
-uint golomb(std::string value)
+uint32_t golomb(std::string value)
 {
 	/**
    	Inverse Golomb coding 
@@ -58,10 +59,11 @@ uint golomb(std::string value)
     @param 	string of the golomb code
     @return converted integer value
 	*/
-	return (uint)(std::stol(value, nullptr, 2) - 1);
+
+	return (uint32_t)(std::stol(value, nullptr, 2) - 1);
 }
 
-std::vector<uint> golomb(std::string filename, size_t size)
+std::vector<uint32_t> golomb(std::string filename, size_t size)
 {
 	/**
    	Opens the file "filename", reads the content and converts each Golomb code to its
@@ -71,10 +73,10 @@ std::vector<uint> golomb(std::string filename, size_t size)
     		size of the data, ie number of golomb codes (must be called as reference to be used as output)
     @return vector of decoded values
 	*/
-	std::vector<uint> encoded;
+	std::vector<uint32_t> encoded;
 	encoded.reserve(size);
 	std::ifstream file (filename);
-	uint count = 0;
+	uint32_t count = 0;
 	std::string str = "1";
 	if(file)
 	{
@@ -96,8 +98,8 @@ std::vector<uint> golomb(std::string filename, size_t size)
 	return encoded;
 }
 
-std::vector<uint> golomb(std::string filename, size_t size, std::vector<uint> LUT)
-{	
+std::vector<uint32_t> golomb(std::string filename, size_t size, std::vector<uint32_t> LUT)
+{
 	/**
    	Opens the file "filename", reads the content and converts each Golomb code to its
 	corresponding integer, taking into account the mapping of the LUT.
@@ -107,10 +109,10 @@ std::vector<uint> golomb(std::string filename, size_t size, std::vector<uint> LU
     		vector representing the LUT
     @return vector of decoded values
 	*/
-	std::vector<uint> encoded;
+	std::vector<uint32_t> encoded;
 	encoded.reserve(size);
 	std::ifstream file (filename);
-	uint count = 0;
+	uint32_t count = 0;
 	std::string str = "1";
 	if(file)
 	{
@@ -139,7 +141,7 @@ std::vector<float> normalize(std::vector<float> P)
 	return P;
 }
 
-std::vector<unsigned int> nbOccurences(std::vector<uint> encoded)
+std::vector<uint32_t> nbOccurences(std::vector<uint32_t> encoded)
 {
 	/**
    	Counts the number of occurences of each individual values in a vector
@@ -148,13 +150,13 @@ std::vector<unsigned int> nbOccurences(std::vector<uint> encoded)
     @return vector where the index i represents a value, and the corresponding element occ[i] is its number
     			of occurences in the initial vector 
 	*/
-	std::vector<unsigned int> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0);
-	for (int i : encoded)
+	std::vector<uint32_t> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0);
+	for (uint32_t i : encoded)
 		++occ[i];
 	return occ;
 }
 
-std::vector<unsigned int> createLUT(std::vector<unsigned int> occurences, std::vector<unsigned int> input)
+std::vector<uint32_t> createLUT(std::vector<uint32_t> occurences, std::vector<uint32_t> input)
 {
 	/**
     Creates a LUT for entropy coding, its purpose being to map short
@@ -169,12 +171,12 @@ std::vector<unsigned int> createLUT(std::vector<unsigned int> occurences, std::v
 	// initialize original index locations
 	std::sort(begin(input), end(input));
 	size_t size = std::unique(begin(input), end(input)) - begin(input);
-	std::vector<unsigned int> idx(occurences.size());
+	std::vector<uint32_t> idx(occurences.size());
 	iota(idx.begin(), idx.end(), 0);
 	// sort indexes based on comparing values in occurences
 	std::sort(idx.begin(), idx.end(),
-	   [&occurences](uint const& i1, uint const& i2) {return occurences[i1] > occurences[i2];});
-	std::vector<uint> LUT(size);
+	   [&occurences](uint32_t const& i1, uint32_t const& i2) {return occurences[i1] > occurences[i2];});
+	std::vector<uint32_t> LUT(size);
 
 	// Fill LUT
 	for (size_t i = 0; i <  size; ++i)

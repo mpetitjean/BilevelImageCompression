@@ -4,29 +4,40 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <iterator>
 
 template <class T>
-int store(std::string filename, std::vector<T> image)
+void store(std::string filename, std::vector<T> image)
 {
 	std::ofstream file (filename, std::ios::binary);
 	if (file)
 		file.write(reinterpret_cast<const char*>(image.data()), image.size() * sizeof(T));
 	else
-		std::cout << "Cannot write into " << filename << std::endl;
+		std::cerr << "Cannot write into " << filename << ", errno: " << file.rdstate() << std::endl;
 	file.close();
-	return file.rdstate();
 }
 
 template <class T>
-int load(std::string filename, std::vector<T>& image)
+std::vector<T> load(std::string filename)
 {	
-	std::ifstream file (filename, std::ios::binary);
+	std::vector<T> output;
+	std::ifstream file (filename, std::ios::binary | std::ios::ate);
 	if (file)
-		file.read(reinterpret_cast<char*>(image.data()), image.size() * sizeof(T));
+	{
+		size_t size;
+		if ((size = file.tellg()) % sizeof(T))
+			std::cerr << "File ans type sizes mismatch"<< std::endl;
+		else
+		{
+			output.resize(size/sizeof(T));
+			file.seekg( 0, std::ios_base::beg);
+			file.read(reinterpret_cast<char*>(output.data()), size);
+		}
+	}
 	else 
-		std::cout << "Cannot read " << filename << std::endl;
+		std::cerr << "Cannot read " << filename << ", errno: " << file.rdstate() << std::endl;
 	file.close();
-	return file.rdstate();
+	return output;
 }
 
 template <class T>

@@ -13,8 +13,8 @@ std::vector<unsigned char> M2F(std::vector<unsigned char> image, std::deque<unsi
 	*/
 	std::vector<unsigned char> result;
 	result.reserve(image.size());
-	int index;
-	int temp;
+	size_t index;
+	unsigned char temp;
 	for (auto num : image)
 	{
 		index = std::distance(begin(dictionnary), std::find(begin(dictionnary), end(dictionnary), num));
@@ -38,7 +38,7 @@ std::vector<unsigned char> iM2F(std::vector<unsigned char> image, std::deque<uns
 	*/
 	std::vector<unsigned char> result;
 	result.reserve(image.size());
-	int temp;
+	unsigned char temp;
 	for (auto num : image)
 	{
 		result.push_back(dictionnary[num]);

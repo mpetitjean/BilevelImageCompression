@@ -5,21 +5,12 @@
 #include <map>
 #include <gmpxx.h>
 
+std::string arithmeticEncoderInt(std::map<uint32_t, std::pair<uint32_t, uint32_t>> intervalsMap, std::vector<uint32_t> TREd, uint32_t size);
 
-std::map <unsigned int, double> probability(std::vector<unsigned int> encoded);
+std::map <uint32_t, uint32_t> probabilityInt(std::vector<uint32_t> encoded);
 
-std::map<unsigned int, std::pair<double, double>> createIntervals(std::map <unsigned int, double> occ);
+std::map<uint32_t, std::pair<uint32_t, uint32_t>> createIntervalsInt(std::map <uint32_t, uint32_t> occ, uint32_t &size);
 
-mpf_class arithmeticEncoder(std::map<unsigned int, std::pair<double, double>> intervalsMap, std::vector<unsigned int> TREd);
-
-std::vector<unsigned int> arithmeticDecoder(mpf_class encoded, std::map<unsigned int, std::pair<double, double>> intervalsMap);
-
-std::string arithmeticEncoderInt(std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, std::vector<unsigned int> TREd, unsigned int size);
-
-std::map <unsigned int, unsigned int> probabilityInt(std::vector<unsigned int> encoded);
-
-std::map<unsigned int, std::pair<unsigned int, unsigned int>> createIntervalsInt(std::map <unsigned int, unsigned int> occ, unsigned int &size);
-
-std::vector<unsigned int> arithmeticDecoderInt(std::string encoded, std::map<unsigned int, std::pair<unsigned int, unsigned int>> intervalsMap, unsigned int size);
+std::vector<uint32_t> arithmeticDecoderInt(std::string encoded, std::map<uint32_t, std::pair<uint32_t, uint32_t>> intervalsMap, uint32_t size);
 
 #endif

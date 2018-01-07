@@ -3,9 +3,9 @@
 
 #include <vector>
 
-std::vector<unsigned int> TRE(std::vector<unsigned char> image);
+std::vector<uint32_t> TRE(std::vector<unsigned char> image);
 
-std::vector<unsigned char> iTRE(std::vector<unsigned int> image);
+std::vector<unsigned char> iTRE(std::vector<uint32_t> image);
 
 
 #endif

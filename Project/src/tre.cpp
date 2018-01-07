@@ -2,7 +2,7 @@
 #include <iostream>
 #include "tre.hpp"
 
-std::vector<unsigned int> TRE(std::vector<unsigned char> image)
+std::vector<uint32_t> TRE(std::vector<unsigned char> image)
 {
 	/**
     Apply a Two-Role-Encoder on a vector 'image'. The number of consecutive zeros 
@@ -11,22 +11,24 @@ std::vector<unsigned int> TRE(std::vector<unsigned char> image)
     @param 	input image
     @return a vector begin the result of the TRE
 	*/
-	std::vector<unsigned int> result;
+	std::vector<uint32_t> result;
 	result.reserve(image.size());
 	std::vector<unsigned char>::iterator it = begin(image);
 	while (it < end(image))
 	{
 		if (*it)
 		{
-			result.push_back(*it + 256);
+			result.push_back((*it) << 24);
 			++it;
 		}
 		else
 		{	
 			result.push_back(distance(it,std::find_if(it, end(image), bind1st(std::not_equal_to<unsigned char>(),*it))));
-			if (result.back() > 255)
+			if (result.back() >= 0xFFFFFFU)
 			{
-				std::cout << "Too many consecutive zeros!" << std::endl;
+				std::cerr << "TRE: Too many consecutive zeros! Method excluded." << std::endl;
+				result.push_back(-1);
+				return result;
 			}
 			it += result.back();
 		}
@@ -34,7 +36,7 @@ std::vector<unsigned int> TRE(std::vector<unsigned char> image)
 	return result;
 }
 
-std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
+std::vector<unsigned char> iTRE(std::vector<uint32_t> image)
 {
 	/**
     Apply a Two-Role-Decoder on a vector 'image', inverse operation of TRE
@@ -47,9 +49,9 @@ std::vector<unsigned char> iTRE(std::vector<unsigned int> image)
 	size_t index = 0;
 	while (index < image.size())
 	{
-		if (image[index] > 255)
+		if (image[index] > 0xFFFFFFU)
 		{
-			result.push_back(image[index] - 256);
+			result.push_back(image[index] >> 24);
 		}
 		else
 		{
