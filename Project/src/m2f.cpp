@@ -5,7 +5,7 @@ std::vector<unsigned char> M2F(std::vector<unsigned char> image, std::deque<unsi
 {	
 	/**
     Performs the Move-To-Front transform on a vector 'image' while updating 'dictionnary'.
-    A deque is used to allow fast insertions
+    A deque is used to allow fast insertions.
 
     @param 	image: input image
 			dictionnary: a deque acting as the dictionnary for the MTF

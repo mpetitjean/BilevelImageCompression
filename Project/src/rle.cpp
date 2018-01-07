@@ -33,7 +33,8 @@ std::vector<unsigned int> encode_rle(std::vector<unsigned char> image)
 std::vector<unsigned char> decode_rle(std::vector<unsigned int> rle)
 {	
 	/**
-    Decodes back the output of the encode_rle function
+    Decodes back the output of the encode_rle function.
+    Assumes 0 as initial value.
 
     @param vector of run lengths
     @return a binary image
