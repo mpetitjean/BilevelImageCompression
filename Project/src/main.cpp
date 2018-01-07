@@ -419,6 +419,7 @@ std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize, char tr
 void compress(std::string filename)
 {
 	std::cout << "Starting compression of " << filename << "..." << std::endl << std::endl;
+	std::cout << "Trying a horizontal scanning order..." << std::endl;
 
 	// Load image and convert to chars
 	std::vector<float> imagefloat = load<float>(filename);
@@ -433,7 +434,7 @@ void compress(std::string filename)
 	std::string M2FTREAthEncoded = encode8M2FTREAth(image, imSize, '0');
 
 	// Same but transposed
-	std::cout << "Trying with its transposed version" << "..." << std::endl << std::endl;
+	std::cout << "Trying a vertical scanning order..." << std::endl;
 	std::string RLEAthEncodedT = encodeRLEAth(imageT, imSize, '1');
 	std::string M2FAthEncodedT = encodeM2FAth(imageT, imSize, '1');
 	std::string RLEGbEncodedT = encodeRLEGb(imageT, imSize, '1');
@@ -441,7 +442,8 @@ void compress(std::string filename)
 	// Select best performance
 	size_t min = -1;
 	uint32_t minInd = 0;
-	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded,M2FTREAthEncoded,RLEAthEncodedT, M2FAthEncodedT, RLEGbEncodedT,M2FTREAthEncodedT};
+	std::vector<std::string> vecMeth = {RLEAthEncoded, M2FAthEncoded, RLEGbEncoded,
+		M2FTREAthEncoded,RLEAthEncodedT, M2FAthEncodedT, RLEGbEncodedT,M2FTREAthEncodedT};
 	for (uint32_t i = 0; i < vecMeth.size(); ++i)
 	 {
 	 	if (vecMeth[i].size() <= min && vecMeth[i] != "-1")
@@ -451,6 +453,36 @@ void compress(std::string filename)
 	 	}
 	 } 
 	std::string compressed = vecMeth[minInd];
+
+	// Output chosen method
+	std::cout << "The best method is ";
+	switch(minInd)
+	{
+		case 0:
+			std::cout << "RLE-Ath in horizontal scanning." << std::endl;
+			break;
+		case 1:
+			std::cout << "MTF-Ath in horizontal scanning." << std::endl;
+			break;
+		case 2:
+			std::cout << "RLE-Gb in horizontal scanning." << std::endl;
+			break;
+		case 3:
+			std::cout << "Benzid in horizontal scanning." << std::endl;
+			break;
+		case 4:
+			std::cout << "RLE-Ath in vertical scanning." << std::endl;
+			break;
+		case 5:
+			std::cout << "MTF-Ath in vertical scanning." << std::endl;
+			break;
+		case 6:
+			std::cout << "RLE-Gb in vertical scanning." << std::endl;
+			break;
+		case 7:
+			std::cout << "Benzid in vertical scanning." << std::endl;
+			break;
+	}
 	
 	// Write to file
 	std::string name = filename.substr(0,filename.length()-4);
