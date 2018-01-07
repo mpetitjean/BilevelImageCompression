@@ -219,10 +219,7 @@ int decompress(std::string filename)
 		}
 
 		// Inverse golomb and RLE
-		std::ofstream outfile("golombed.temp");
-		outfile << strRes;
-		outfile.close();
-		std::vector<uint32_t> decoded = golomb("golombed.temp", sizedata, LUT);
+		std::vector<uint32_t> decoded = golomb(strRes, LUT);
 		result = decode_rle(decoded);
 	}
 	else

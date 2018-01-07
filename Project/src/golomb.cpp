@@ -3,6 +3,7 @@
 #include <boost/dynamic_bitset.hpp>
 #include <numeric>
 #include <climits>
+#include <sstream>
 #include "golomb.hpp"
 
 std::string golomb(std::vector<uint32_t> stream)
@@ -131,6 +132,28 @@ std::vector<uint32_t> golomb(std::string filename, size_t size, std::vector<uint
 	}
 	else
 		std::cout << "Cannot read " << filename << std::endl;
+	return encoded;
+}
+
+std::vector<uint32_t> golomb(std::string golombed, std::vector<uint32_t> LUT)
+{
+	std::vector<uint32_t> encoded;
+	encoded.reserve(golombed.length());
+	std::stringstream file(golombed);
+	uint32_t count = 0;
+	std::string str = "1";
+	while(!file.eof())
+	{
+		++count;
+		if(file.get()=='1')
+		{
+			for (char c; str.size() != count && file.get(c); )
+				str += c;
+			encoded.push_back(LUT[golomb(str)]);
+			str = "1";
+			count = 0;
+		}
+	}
 	return encoded;
 }
 
