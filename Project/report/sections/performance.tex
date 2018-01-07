@@ -7,26 +7,26 @@ The various methods have been tested on several test images. The results are sum
 	\centering
 	\begin{tabular}{|l|cccc|}
 		\hline
-		Image                 &RLE-Gb & RLE-Ath & MTF-Ath & Benzid \\ \hline
+		Image & RLE-Gb & RLE-Ath & MTF-Ath & Benzid \\ \hline
 		256x256 & 2.03  & 1.9 & \textbf{2.42} & 1.65      \\
 		noisy, 256x256 & 0.96 & \textbf{1.04} & 0.99   & 0.88   \\
-		512x512  & 1.62  & \textbf{1.68} & 1.64 & 1.42 \\
-		1024x1024 & 2.34 & \textbf{2.34} & 2.09 & 2.17\\
-		2048x2048 & 6.39 & \textbf{7.09} & 6.55 & 6.47 \\ \hline
+		512x512  & 1.62  & \textbf{1.68} & 1.64 & 1.48 \\
+		1024x1024 & 2.34 & 2.34 & 2.09 & \textbf{2.38}\\
+		2048x2048 & 6.39 & 7.09 & 6.55 & \textbf{7.1} \\ \hline
 	\end{tabular}
 	\caption{Performance of the different schemes on images with various sizes. The best compression ratio is bolded for each image.}
 	\label{tab:CR}
 \end{table}
 
-\vspace*{-0.5cm}
-It appears that the MTF-Ath is the best performer for small images, while the RLE-Ath is the best for bigger or noisy images. It is easy to understand by looking at \autoref{fig:earth} and \autoref{fig:big}, which highlight the impact of the header, compressed data and dictionaries on the final size.
+\vspace*{-0.6cm}
+The MTF-Ath is the best performer for small images, while the RLE-Ath and Benzid compress bigger or noisy images better. It is easy to understand by looking at \autoref{fig:earth} and \autoref{fig:big}, which highlight the impact of the header, compressed data and dictionaries on the final size.
 
 \begin{figure}[h]
 	\centering
 	\begin{tikzpicture}
 	\begin{axis}[
 	ybar stacked,
-	height=.27\textheight,
+	height=.26\textheight,
 %	enlargelimits=0.15,
 	ymin = 0,
 	legend style={at={(0.5,0.95)},
@@ -47,11 +47,12 @@ It appears that the MTF-Ath is the best performer for small images, while the RL
 \end{figure}
 
 \begin{figure}[h]
+	\vspace*{-0.4cm}
 	\centering
 	\begin{tikzpicture}
 	\begin{axis}[
 	ybar stacked,
-	height=.27\textheight,
+	height=.26\textheight,
 	%	enlargelimits=0.15,
 	ymin = 0,
 	legend style={at={(0.5,1.05)},
@@ -61,18 +62,15 @@ It appears that the MTF-Ath is the best performer for small images, while the RL
 	xtick=data,
 	]
 	%\addplot table [x=a, y=c, col sep=comma] {data.csv};
-	\addplot+[ybar, color=lime] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-header.csv};
-	\addplot+[ybar, color=teal] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-data.csv};
-	\addplot+[ybar, color=violet] table [x=method, y=bits, col sep=comma] {data/airport/benchmark-dic.csv};
+	\addplot+[ybar, color=lime] table [x=method, y=bits, col sep=comma] {data/landscape/benchmark-header.csv};
+	\addplot+[ybar, color=teal] table [x=method, y=bits, col sep=comma] {data/landscape/benchmark-data.csv};
+	\addplot+[ybar, color=violet] table [x=method, y=bits, col sep=comma] {data/landscape/benchmark-dic.csv};
 	\legend{Header, Data, LUT}
 	\end{axis}
 	\end{tikzpicture}
-	\caption{Performance of the techniques on a 1024x1024 image (airport)}
+	\caption{Performance of the techniques on a 2048x2048 image (landscape)}
 	\label{fig:big}
+	\vspace*{-0.5cm}
 \end{figure}
 
-\vspace*{-0.5cm}
-It appears that even in the small image, the best data compression is done with RLE-Ath. However, the overhead needed to decode the image is very important. The MTF-Ath only needs few bytes of dictionaries while using the powerful arithmetic coder, making it the most efficient technique. 
-
-
-When the size of the image increases, the size of the dictionaries becomes less significant with respect to the size of the compressed data. RLE-Ath is then the best performer.
+It appears that even in the small image, the best data compression is done with RLE-Ath. However, the overhead needed to decode the image is important. The MTF-Ath only needs few bytes of dictionaries while using the powerful arithmetic coder, making it the most efficient technique. When the size of the image increases, the size of the dictionaries becomes less significant with respect to the size of the compressed data. RLE-Ath is then the best performer.

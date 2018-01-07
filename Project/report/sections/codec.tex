@@ -1,3 +1,4 @@
+\vspace*{-0.4cm}
 \section{Compression schemes}
 
 Various combinations of the previously detailed techniques are implemented in the codec. The encoder will try for all possible techniques and write to file the most advantageous method. They are listed here:
@@ -9,7 +10,7 @@ Various combinations of the previously detailed techniques are implemented in th
 	
 	\item \textbf{MTF-Ath}: the image is transformed using the MTF and then is compressed by the arithmetic encoder. The dictionnary of the MTF and the probabilities for the arithmetic coder need to be added to the file.
 	
-	\item \textbf{Benzid}: the method is inspired from the one proposed in \cite{benzid}. The image is transformed using the MTF then the TRE and compressed using the arithmetic coder.
+	\item \textbf{Benzid}: the method is inspired from the one proposed in \cite{benzid}. The image is shrinked in columns to reach 8bpp, then transformed using the MTF then the TRE and compressed using the arithmetic coder.
 \end{itemize}
 
 Moreover, all the techniques are tested on the image in two scanning orders: horizontal and vertical.
