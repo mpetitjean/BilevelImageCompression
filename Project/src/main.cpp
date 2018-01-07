@@ -418,7 +418,7 @@ std::string encodeRLEGb(std::vector<unsigned char> image, size_t imSize, char tr
 
 void compress(std::string filename)
 {
-	std::cout << "Starting compression of " << filename << "..." << std::endl << std::endl;
+	std::cout << std::endl << "Starting compression of " << filename << "..." << std::endl << std::endl;
 	std::cout << "Trying a horizontal scanning order..." << std::endl;
 
 	// Load image and convert to chars
@@ -510,7 +510,14 @@ int main(int argc, char* argv[])
 	{
 		return decompress(argv[1]);
 		
-	}	
+	}
+	else if (std::string(argv[1]) == "help")
+	{
+		std::cout << std::endl << "This is a bilevel image compressor. To use it, type:" << std::endl;
+		std::cout << "./main imagename" << std::endl;
+		std::cout << std::endl << "The file should be either a .raw file, which will be compressed, or a " 
+				  << ".jpp file, which will be decompressed." << std::endl;
+	}
 	else
 	{
 		std::cerr << "Error using " << argv[0] << ". Unknown second argument, should be IMAGE_NAME.raw (compress) or IMAGE_NAME.jpp (decompress))" << std::endl;		
