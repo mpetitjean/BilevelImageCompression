@@ -4,7 +4,7 @@
 #include "rle.hpp"
 
 
-std::vector<unsigned int> encode_rle(std::vector<unsigned char> image)
+std::vector<uint32_t> encode_rle(std::vector<unsigned char> image)
 {
 	/**
     Encodes the content of a bilevel vector into its RLE equivalent.
@@ -13,7 +13,7 @@ std::vector<unsigned int> encode_rle(std::vector<unsigned char> image)
     @param vector only containing 1's or 0's
     @return a vector of the length of each run
 	*/
-	std::vector<unsigned int> output;
+	std::vector<uint32_t> output;
 	output.reserve(image.size());
 
 	std::vector<unsigned char>::iterator it = begin(image);
@@ -30,7 +30,7 @@ std::vector<unsigned int> encode_rle(std::vector<unsigned char> image)
 	return output;
 }
 
-std::vector<unsigned char> decode_rle(std::vector<unsigned int> rle)
+std::vector<unsigned char> decode_rle(std::vector<uint32_t> rle)
 {	
 	/**
     Decodes back the output of the encode_rle function
