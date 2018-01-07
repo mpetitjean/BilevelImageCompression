@@ -190,7 +190,6 @@ void approximateBlock(float * bufferIn, float * bufferOut, float * Q, float * DC
 	{
 		for (int j = 0; j < BLK_SIZE; ++j)
 		{
-			//temp2[j + i*BLK_SIZE] = (int) (temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
 			temp2[j + i*BLK_SIZE] = round(temp[j+i*BLK_SIZE]/Q[j+i*BLK_SIZE]);
 		}
 	}
