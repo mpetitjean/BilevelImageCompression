@@ -13,7 +13,7 @@ The purpose of the MTF is to reduce the entropy of the image \cite{benzid}. It i
 
 \subsection{Two-Role Encoder (TRE)}
 
-The TRE is a variant of the RLE which is more suited when one symbol is more probable than the other \cite{benzid}, so that it is meant to be used after the MTF. Each non-zero element is shifted by 8 bits, while the sequence of zeros is simply encoded as the run length. To follow the previous example, the sequence $[1,0,0,1,0,0,0]$ would be encoded as $[256,2,256,3]$. Here, the assumption that no run length will exceed 256 is done. The stream can be decoded knowing that a symbol that is repeated is encoded with a number greater than 255, while a run cannot be greater than 255.
+The TRE is a variant of the RLE which is more suited when one symbol is more probable than the other \cite{benzid}, so that it is meant to be used after the MTF. Each non-zero element is shifted by 24 bits, while the sequence of zeros is simply encoded as the run length. To follow the previous example, the sequence $[1,0,0,1,0,0,0]$ would be encoded as $[2^{23},2,2^{23},3]$. The stream can be decoded knowing that a symbol that is repeated is encoded with a number greater than $2^{23}$, while a run cannot be greater than $2^{23}$.
 
 \subsection{Exp-Golomb coding}
 
