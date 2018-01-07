@@ -9,7 +9,7 @@ The RLE transforms a bilevel image into a sequence of runs. A run is the number 
 
 \subsection{Move to Front transform (MTF)}
 
-The purpose of the MTF is to reduce the entropy of the image \cite{benzid}. It is also based on the concept of runs but replaces each symbol of a run by 0 except the first one. The first one is replaced by the index of the symbol in the alphabet of the source. For example, for a sequence $[1,1,1,0,0,0,0]$, the alphabet is $[0,1]$. The index of 1 in the alphabet is 1, so that the sequence becomes $[1,0,0,0,0,0,0]$. The 1 is moved to the front of the alphabet (hence the name of the MTF), and the sequence of 0's now needs to be encoded. The alphabet is now $[1,0]$, so that the index of 0 is 1. The final sequence is $[1,0,0,1,0,0,0]$ and the final alphabet is $[0,1]$.
+The purpose of the MTF is to reduce the entropy of the image \cite{benzid}. It is also based on the concept of runs but replaces each symbol of a run by 0 except the first one. The first one is replaced by the index of the symbol in the alphabet of the source. For example, for a sequence $[1,1,1,0,0,0,0]$, the alphabet is $[0,1]$. The index of 1 in the alphabet is 1, so that the sequence becomes $[\textbf{1},\textbf{0},\textbf{0},0,0,0,0]$. The 1 is moved to the front of the alphabet (hence the name of the MTF), and the sequence of 0's now needs to be encoded. The alphabet is now $[1,0]$, so that the index of 0 is 1. The final sequence is $[1,0,0,1,0,0,0]$ and the final alphabet is $[0,1]$.
 
 \subsection{Two-Role Encoder (TRE)}
 

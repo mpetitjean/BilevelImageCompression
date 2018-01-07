@@ -14,7 +14,7 @@ Various combinations of the previously detailed techniques are implemented in th
 
 Moreover, all the techniques are tested on the image in two scanning orders: horizontal and vertical.
 
-In the compressed file, a flag identifies the chosen method. For some of them, additional size information is also needed to correctly parse the file while decoding. The typical structure of the compressed file is shown below:
+In the compressed file, a flag identifies the chosen method. For some of them, additional size information is also needed to correctly parse the file while decoding. The LUTs are always transmitted with fixed size numbers (8 or 32 bits numbers depending on the case). The typical structure of the compressed file is shown below:
 
 \begin{table}[h]
 	\centering
