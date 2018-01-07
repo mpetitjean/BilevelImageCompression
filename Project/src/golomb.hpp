@@ -7,6 +7,8 @@ std::string golomb(std::vector<uint32_t> stream, std::vector<uint32_t> LUT);
 
 std::vector<uint32_t> golomb(std::string filename, size_t size, std::vector<uint32_t> LUT);
 
+std::vector<uint32_t> golomb(std::string golombed, std::vector<uint32_t> LUT);
+
 std::string golomb(std::vector<uint32_t> stream);
 
 std::string golomb(uint32_t value);
