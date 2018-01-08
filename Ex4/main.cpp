@@ -64,6 +64,14 @@ float psnr(std::vector<float> image, std::vector<float> ref, float max)
 	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0, std::plus<float>(), sqminus<float>()));
 }
 
+void normalize(std::vector<float>& image)
+{
+	for(size_t i = 0; i < image.size(); ++i)
+	{
+		image[i] = (image[i] < 0.) ? 0. : ((image[i] > 1.) ? 1. : image[i]);
+	}
+}
+
 std::vector<float> addGaussianNoise(std::vector<float> image, float std = 0.024)
 {
 	std::default_random_engine gen;
@@ -77,9 +85,10 @@ int main()
 	std::vector<float> lena(ROWS*COLS);
 	load("lena_256x256.raw", lena);
 	std::vector<float> lena8 = normalize8bpp(lena);
-	std::vector<float> noisyLena8 = addGaussianNoise(lena8);	
+	std::vector<float> noisyLena8 = addGaussianNoise(lena8, 0.2);	
+	normalize(noisyLena8);
 	store("lena8.raw", lena8);
 	store("lena8noisy.raw", noisyLena8);
-
+	printf("psnr: %5f dB\n", psnr(lena8, noisyLena8, 1.));
 	return 0;
 }

@@ -34,6 +34,15 @@ template <class T> struct sqminus {
   typedef T result_type;
 };
 
+void normalize(std::vector<float>& image)
+{
+	for(size_t i = 0; i < image.size(); ++i)
+	{
+		image[i] = (image[i] < 0.) ? 0. : ((image[i] > 1.) ? 1. : image[i]);
+	}
+
+}
+
 std::vector<float> createConstImage(int rows = ROWS, int cols = COLS, float value = 0.5)
 {
 	return std::vector<float>(rows*cols, value) ;
@@ -48,7 +57,7 @@ std::vector<float> createUniformRandomImage(int rows = ROWS, int cols = COLS)
 	return image;
 }
 
-std::vector<float> createNormalRandomImage(int rows = ROWS, int cols = COLS, float mean = 0.0, float std = 1.0)
+std::vector<float> createNormalRandomImage(int rows = ROWS, int cols = COLS, float mean = 0.5, float std = 0.29)
 {
 	std::default_random_engine gen;
 	std::normal_distribution<float> dis(mean, std);
@@ -57,9 +66,9 @@ std::vector<float> createNormalRandomImage(int rows = ROWS, int cols = COLS, flo
 	return image;
 }
 
-float psnr(std::vector<float> image, std::vector<float> ref, float max)
+float mse(std::vector<float> image, std::vector<float> ref)
 {
-	return 10*log10(max*max*image.size()/std::inner_product(image.begin(), image.end(), ref.begin(), 0.0, std::plus<float>(), sqminus<float>()));
+	return std::inner_product(image.begin(), image.end(), ref.begin(), 0.0, std::plus<float>(), sqminus<float>())/image.size();
 }
 
 int main()
@@ -67,10 +76,11 @@ int main()
 	std::vector<float> constImage = createConstImage();
 	std::vector<float> uniformImage = createUniformRandomImage();
 	std::vector<float> normalImage = createNormalRandomImage();
+	//normalize(normalImage);
 	store("constImage.raw", constImage);
 	store("uniformImage.raw", uniformImage);
 	store("normalImage.raw", normalImage);
-	printf("PSNR between constant and uniform random distributed is %.2f dB\n", psnr(constImage, uniformImage, 1.0));
+	printf("MSE between constant and uniform random distributed is %.5f\n", mse(constImage, normalImage));
 
 	return 0;
 }

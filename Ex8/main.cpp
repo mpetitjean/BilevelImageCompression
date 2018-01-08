@@ -131,12 +131,18 @@ int main()
 	store("lena_DCT.raw", lena_DCT);
 
 	std::vector<float> IDCT_vectors = transpose(DCT_vectors, sqrt(DCT_vectors.size()));
+	store("IDCT_vectors.raw", IDCT_vectors);
 	std::vector<float> lena_new = transform(lena_DCT, IDCT_vectors);
 	store("lena_new.raw", lena_new);
 
-	lena_DCT = threshold(lena_DCT, 0);
-	std::vector<float> lena_new_t = transform(lena_DCT, IDCT_vectors);
-	store("lena_new_t.raw", lena_new_t);
+	std::vector<float> lena_DCT_t = threshold(lena_DCT, 10);
+	std::vector<float> lena_new_t = transform(lena_DCT_t, IDCT_vectors);
+	store("lena_new_t10.raw", lena_new_t);
+	std::cout << psnr(lena_new_t, lena, 255) << std::endl;
+
+	lena_DCT_t = threshold(lena_DCT, 50);
+	lena_new_t = transform(lena_DCT_t, IDCT_vectors);
+	store("lena_new_t50.raw", lena_new_t);
 
 	std::cout << psnr(lena_new_t, lena, 255) << std::endl;
 

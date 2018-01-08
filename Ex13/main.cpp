@@ -179,7 +179,7 @@ int main()
 	std::vector<int> encoded2 = golomb("test.raw", encoded.size());
 	std::vector<int> LUT = createLUT(P);
 	
-	outfile.open("testttt.raw");
+	outfile.open("testttt.txt");
 	for(auto value : encoded)
 	{
 		outfile << golomb(LUT[value]);
@@ -191,7 +191,7 @@ int main()
 		outfile << value << std::endl;
 	}
 	outfile.close();
-	std::vector<int> encoded3 = golomb("testttt.raw", encoded.size());
+	std::vector<int> encoded3 = golomb("testttt.txt", encoded.size());
 	std::transform(encoded3.begin(), encoded3.end(), encoded3.begin(),
 		[LUT](int value){return std::distance(LUT.begin(), std::find(LUT.begin(), LUT.end(), value));});
 	std::cout << (encoded3 == encoded && encoded2 == encoded) << std::endl;

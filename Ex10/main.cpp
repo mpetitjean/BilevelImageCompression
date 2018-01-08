@@ -115,10 +115,11 @@ std::vector<float> approximateBlock(std::vector<float> block, std::vector<float>
 	return transform(block, tcoef);
 }
 
-std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoef, int block_size = 8)
+std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoef, int block_size = 8, bool intervaled=0)
 {
 	int length = sqrt(image.size());
 	std::vector<float> result(image.size());
+	std::vector<float> temp(image.size());
 	int nbframe = length / block_size;
 	std::vector<float> block(block_size * block_size);
 
@@ -140,6 +141,21 @@ std::vector<float> approximate(std::vector<float> image, std::vector<float> tcoe
 		 	std::copy_n(block.begin() + i * block_size, block_size, result.begin() + i * length + off_row + off_col);
 		}
 	}
+	if(intervaled)
+	{
+		for (int step = 0; step < block_size*block_size; ++step)
+		{
+			for (int row = 0; row < nbframe; ++row)
+			{
+				for (int col = 0; col < nbframe; ++col)
+				{
+					temp[row * length + col + (step%block_size)*nbframe + step/block_size*length*nbframe] = 
+					result[(step%block_size) + (step / block_size) * length + col * block_size + row * length * block_size];
+				}
+			}
+		}
+		return temp;
+	}
 
 	return result;
 
@@ -154,12 +170,12 @@ std::vector<uint8_t> quantize8bpp(std::vector<float> image)
 
 int main()
 {
-	std::vector<float> DCT_vectors = DCT_vectors_basis(32);
+	std::vector<float> DCT_vectors = DCT_vectors_basis(8);
 
 	std::vector<float> lena(LENGTH_1D * LENGTH_1D);
 	load("lena_256x256.raw", lena);
 
-	std::vector<float> lenaJPEG = approximate(lena, DCT_vectors, 32);
+	std::vector<float> lenaJPEG = approximate(lena, DCT_vectors, 8, 1);
 	store("lenaJPEG.raw", lenaJPEG);
 	return 0;
 }

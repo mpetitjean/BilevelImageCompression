@@ -56,12 +56,13 @@ std::vector<float> normalize(std::vector<float> P)
 {
 	float sum = std::accumulate(P.begin(), P.end(), 0.);
 	std::transform(P.begin(), P.end(), P.begin(), [sum](float val){return val/sum;});
+	std::cout << sum << std::endl;
 	return P;
 }
 
 std::vector<float> nbOccurences(std::vector<int> encoded)
 {
-	std::cout << *std::max_element(encoded.begin(), encoded.end()) << std::endl;
+	// std::cout << *std::max_element(encoded.begin(), encoded.end()) << std::endl;
 	std::vector<float> occ(*std::max_element(encoded.begin(), encoded.end()) + 1, 0.);
 	for (int i : encoded)
 		occ[i]++;
@@ -118,6 +119,7 @@ int main()
 	std::vector<float> P = nbOccurences(encoded);
 	std::vector<float> Pnorm = normalize(P);
 	float H = entropy(Pnorm);
+	std::cout << H << std::endl;
 	toCSV("test.csv", P);
 	return 0;
 }

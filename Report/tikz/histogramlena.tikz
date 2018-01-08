@@ -1,0 +1,14 @@
+\begin{tikzpicture}
+\begin{axis}[%
+xlabel=Pixel values,
+ylabel=Occurences,,
+ybar,
+bar width=1pt,
+xmin = 1,
+xmax = 255,
+height=5 cm,
+width=13cm,
+]
+\addplot table [x=value, y=count, col sep=comma] {img/Histogramlena.csv};
+\end{axis}
+\end{tikzpicture}%

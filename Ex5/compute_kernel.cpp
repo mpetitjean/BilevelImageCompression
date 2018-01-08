@@ -1,11 +1,12 @@
 #include <cmath>
 #include <iostream>
+#include <cstdio>
 
 int main()
 {
-	float elem00 = 1/(2*M_PI);
-	float elem10 = 1/(2*M_PI)*sqrt(exp(-1));
-	float elem11 = 1/(2*M_PI)*exp(-1);
+	float elem00 = 1;
+	float elem10 = sqrt(exp(-1));
+	float elem11 = exp(-1);
 
 	printf("Kernel:\n\n");
 	printf("%.4f %.4f %.4f\n", elem11, elem10, elem11);

@@ -1,0 +1,13 @@
+\begin{tikzpicture}
+\begin{axis}[%
+xlabel=run-length,
+ylabel=Occurences,,
+ybar,
+bar width=1pt,
+xmin=0,
+height=5 cm,
+width=13cm,
+]
+\addplot table [x expr=\coordindex+1,y index={0},col sep=comma] {img/test.csv};
+\end{axis}
+\end{tikzpicture}%
