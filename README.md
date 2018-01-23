@@ -1,4 +1,4 @@
-# Image and Video Technology
+# JPP: Bilevel Images Codec
 Encoder/Decoder tool for  lossless bilevel image compression (only power-of-two square images).
 
 The source code is in the folder 'src'. To compile the program, simply type 'make' (note that the provided Makefile requires g++ and Boost). This code was tested with g++ 5.4 and g++ 7.2. Once the code is compiled, an executable called 'convert' will be available.
