@@ -272,3 +272,4 @@ TSWLatexianTemp*
 
 # standalone packages
 *.sta
+bib/
